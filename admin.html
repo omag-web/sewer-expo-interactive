@@ -802,7 +802,7 @@
     $("phaseMeta").textContent = phase === "standings" ? "Showing team standings · Next picks up where you left off" : phase === "lobby" ? "Players are joining" :
       phase === "video" ? "Video is playing on the screen — the first question opens by itself when it ends" :
       phase === "question" ? `Phones are live · ${QUESTIONS[qIndex].q}` : phase === "final" ? "Winner is on the screen" :
-      phase === "outro" ? `${CLOSING_VIDEO ? CLOSING_VIDEO.title : "Closing video"} is playing with sound — then a thank-you card` : qLabel(qIndex);
+      phase === "outro" ? `${CLOSING_VIDEO ? CLOSING_VIDEO.title : "Closing video"} is playing with sound — then a thank-you card` : `${QUESTIONS[qIndex].roundTitle} (shown as "${QUESTIONS[qIndex].publicTitle}") · Question ${QUESTIONS[qIndex].step + 1} of ${QUESTIONS[qIndex].steps}`;
     $("kPlayers").textContent = players.length;
     $("kAnswers").textContent = ["question", "reveal"].includes(phase) ? `${answers.length}` : "–";
 

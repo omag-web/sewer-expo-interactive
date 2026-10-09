@@ -23,6 +23,8 @@ const STANDINGS_ROUNDS = (() => {
   return list.filter((r) => r >= 1 && r < n).map((r) => MAIN[r - 1]);   // → ROUNDS indexes
 })();
 const HALFTIME = GAME.standingsAfter === "middle" || GAME.standingsAfter == null;
+// What the audience sees instead of the video's real name
+const publicTitle = (ri) => (ROUNDS[ri].extra ? "Bonus video" : `Video ${MAIN.indexOf(ri) + 1}`);
 export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) => {
   const base = ri * ROUND_QUESTIONS.length;
   const choices = t.choices.map((c, j) => {
@@ -34,10 +36,10 @@ export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) =>
   if (t.scale) return {
     id: t.id, q: t.q, scale: true, unscored: true, multi: false, time: t.time, choices, answer: [],
     low: t.low, high: t.high, explain: "",
-    round: ri, roundTitle: r.title || `Video ${ri + 1}`, step: k, steps: ROUND_QUESTIONS.length,
+    round: ri, roundTitle: r.title || `Video ${ri + 1}`, publicTitle: publicTitle(ri), step: k, steps: ROUND_QUESTIONS.length,
     video: k === 0 ? r.video : null,
     leaderboard: k === ROUND_QUESTIONS.length - 1 && (STANDINGS_ROUNDS.includes(ri) || ri === LAST_MAIN), confIndex: -1,
-    standingsTitle: ri === LAST_MAIN ? "Final standings" : HALFTIME ? "Halftime standings" : `Standings after ${r.title || `Video ${ri + 1}`}`,
+    standingsTitle: ri === LAST_MAIN ? "Final standings" : HALFTIME ? "Halftime standings" : `Standings after ${publicTitle(ri)}`,
     extra: !!r.extra
   };
   const raw = r.answers ? r.answers[t.id] : undefined;
@@ -53,15 +55,16 @@ export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) =>
     noKey, unscored: noKey,
     hasMeanings: choices.some((c) => c.meaning),
     explain: r.explain ? r.explain[t.id] : "",
-    round: ri, roundTitle: r.title || `Video ${ri + 1}`, step: k, steps: ROUND_QUESTIONS.length,
+    round: ri, roundTitle: r.title || `Video ${ri + 1}`, publicTitle: publicTitle(ri), step: k, steps: ROUND_QUESTIONS.length,
     video: k === 0 ? r.video : null,
     leaderboard: k === ROUND_QUESTIONS.length - 1 && (STANDINGS_ROUNDS.includes(ri) || ri === LAST_MAIN),
-    standingsTitle: ri === LAST_MAIN ? "Final standings" : HALFTIME ? "Halftime standings" : `Standings after ${r.title || `Video ${ri + 1}`}`,
+    standingsTitle: ri === LAST_MAIN ? "Final standings" : HALFTIME ? "Halftime standings" : `Standings after ${publicTitle(ri)}`,
     extra: !!r.extra,
     confIndex: confAt >= 0 && confAt < k ? base + confAt : -1
   };
 }));
-export const qLabel = (i) => { const Q = QUESTIONS[i]; return `${Q.roundTitle} · Question ${Q.step + 1} of ${Q.steps}`; };
+// qLabel is for the audience (never the video's real name); qShort is admin-only
+export const qLabel = (i) => { const Q = QUESTIONS[i]; return `${Q.publicTitle} · Question ${Q.step + 1} of ${Q.steps}`; };
 export const qShort = (i) => { const Q = QUESTIONS[i]; return `${Q.roundTitle} · Q${Q.step + 1}`; };
 export const choiceMark = (c, k) => c.emoji || c.mark || LETTERS[k];
 

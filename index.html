@@ -277,7 +277,7 @@
     if (key === lastKey) return;
 
     if (phase === "lobby") swap(viewLobby(), key);
-    else if (phase === "video") swap(viewMsg("📺", QUESTIONS[q].roundTitle, "Eyes on the big screen. Questions open right after the video."), key);
+    else if (phase === "video") swap(viewMsg("📺", QUESTIONS[q].publicTitle, "Eyes on the big screen. Questions open right after the video."), key);
     else if (phase === "question") swap(viewQuestion(q), key);
     else if (phase === "reveal") swap(viewReveal(q), key);
     else if (phase === "leaderboard" || phase === "standings") swap(viewStanding(false), key);
