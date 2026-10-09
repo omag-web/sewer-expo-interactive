@@ -62,6 +62,11 @@ export const GAME = {
 
   leaderboardSize: 25,    // teams shown on the screen's standings (two columns)
 
+  // When to stop for full-screen team standings (the finale always shows the winners).
+  //   "middle"  → once, halfway through the videos
+  //   [2, 4]    → after those video numbers
+  standingsAfter: "middle",
+
   // Type this on the screen or the player page (on a keyboard, not in a text box)
   // to jump to the admin console — same idea as the AI Control Room's code word.
   adminCode: "beneath"

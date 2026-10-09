@@ -120,7 +120,11 @@
   .bellline { stroke-dasharray: 4000; stroke-dashoffset: 4000; animation: draw 1.4s .5s ease forwards; }
   @keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
   @keyframes draw { to { stroke-dashoffset: 0; } }
-  /* Leaderboard */
+  /* Leaderboard: full screen, no top bar */
+  body.full .top { display: none; }
+  body.full .body { padding-top: 4vh; }
+  .st-title { font-size: 8vh; margin: 0 0 .6vh; }
+  .standings .eyebrow { margin-bottom: 2.2vh; }
   .tbars { display: grid; gap: 2vh; }
   .tbars.big { flex: 1; align-content: center; gap: 1.1vh; padding: 0 2vw; }
   .tbars.big .tbar { display: grid; grid-template-columns: 34vw 1fr; align-items: center; gap: 1.6vw; }
@@ -250,6 +254,7 @@
     const key = `${phase}:${q}`;
     if (key === viewKey) return update();
     document.querySelectorAll(".confetti").forEach((c) => c.remove());
+    document.body.classList.remove("full");
     viewKey = key;
     clearInterval(tick); tick = null;
     if (phase !== "video") stopVideo();
@@ -526,16 +531,17 @@
 
   // ── Team leaderboard ─────────────────────────────────
   function viewBoards() {
-    const v = view();
+    const v = view("standings");
     const eyebrow = el("p", "eyebrow");
     const bars = el("div", "tbars big");
-    v.append(eyebrow, bars);
+    v.append(el("h1", "st-title", QUESTIONS[game.qIndex].standingsTitle), eyebrow, bars);
+    document.body.classList.add("full");
     let built = false;
     updaters.push(() => {
       const all = teamStandings(players);
       const size = GAME.leaderboardSize || 25;
       const teams = all.slice(0, size);
-      eyebrow.textContent = `${all.length > size ? `Top ${size} of ${all.length}` : `All ${all.length}`} teams · after ${QUESTIONS[game.qIndex].roundTitle}`;
+      eyebrow.textContent = `${all.length > size ? `Top ${size} of ${all.length}` : `All ${all.length}`} teams · ${GAME.teamScoring === "total" ? "total points" : "average points per player"}`;
       bars.classList.toggle("two", teams.length > 10);
       bars.style.setProperty("--rows", String(teams.length > 10 ? Math.ceil(teams.length / 2) : teams.length));
       const max = Math.max(1, ...teams.map((t) => t.value));

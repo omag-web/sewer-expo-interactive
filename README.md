@@ -19,7 +19,8 @@ Static site (GitHub Pages) + the Expo Wall's existing Firebase project (`sewer-e
 3. **What did you see?** pick all that apply → partial credit
 4. **How serious is it?** Watch it / Maintain it / Fix it / Act now
 5. **What would you do?** single pick
-6. Team standings
+
+Full-screen team standings show once at halftime (`standingsAfter` in `config.js`), and the finale shows the winners.
 
 Every question gets **2 minutes** for table discussion (`defaultTimeLimit` in `config.js`). When a video ends, the screen moves straight to the first question.
 The admin page reveals automatically when time runs out or everyone has answered.

@@ -11,6 +11,14 @@ const PALETTE = ["#d49c61", "#5b9bd5", "#6cc08b", "#c77dcc", "#e0614f", "#4fc1c1
 const SCALE = ["#8a8178", "#a58a6c", "#bd9264", "#d49c61", "#e9b27a"];
 const norm = (s) => String(s).trim().toLowerCase();
 const confAt = ROUND_QUESTIONS.findIndex((t) => t.scale);
+// Video numbers (1-based) that end with full-screen standings. Never the last one,
+// because the finale follows it.
+const STANDINGS_ROUNDS = (() => {
+  const n = ROUNDS.length, v = GAME.standingsAfter ?? "middle";
+  const list = Array.isArray(v) ? v : v === "middle" ? [Math.ceil(n / 2)] : [];
+  return list.filter((r) => r >= 1 && r < n);
+})();
+const HALFTIME = GAME.standingsAfter === "middle" || GAME.standingsAfter == null;
 export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) => {
   const base = ri * ROUND_QUESTIONS.length;
   const choices = t.choices.map((c, j) => {
@@ -24,7 +32,8 @@ export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) =>
     low: t.low, high: t.high, explain: "",
     round: ri, roundTitle: r.title || `Video ${ri + 1}`, step: k, steps: ROUND_QUESTIONS.length,
     video: k === 0 ? r.video : null,
-    leaderboard: k === ROUND_QUESTIONS.length - 1, confIndex: -1
+    leaderboard: k === ROUND_QUESTIONS.length - 1 && STANDINGS_ROUNDS.includes(ri + 1), confIndex: -1,
+    standingsTitle: HALFTIME ? "Halftime standings" : `Standings after ${r.title || `Video ${ri + 1}`}`
   };
   const raw = r.answers ? r.answers[t.id] : undefined;
   const answer = [].concat(raw ?? []).map((a) => {
@@ -39,7 +48,8 @@ export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) =>
     explain: r.explain ? r.explain[t.id] : "",
     round: ri, roundTitle: r.title || `Video ${ri + 1}`, step: k, steps: ROUND_QUESTIONS.length,
     video: k === 0 ? r.video : null,
-    leaderboard: k === ROUND_QUESTIONS.length - 1,
+    leaderboard: k === ROUND_QUESTIONS.length - 1 && STANDINGS_ROUNDS.includes(ri + 1),
+    standingsTitle: HALFTIME ? "Halftime standings" : `Standings after ${r.title || `Video ${ri + 1}`}`,
     confIndex: confAt >= 0 && confAt < k ? base + confAt : -1
   };
 }));
@@ -118,7 +128,7 @@ export function describeStep(s) {
   if (s.phase === "lobby") return "Lobby";
   const Q = QUESTIONS[s.qIndex];
   const n = qShort(s.qIndex);
-  return { video: `Play ${Q.roundTitle}`, question: `Open ${n}`, reveal: `Reveal ${n}`, leaderboard: "Team standings" }[s.phase];
+  return { video: `Play ${Q.roundTitle}`, question: `Open ${n}`, reveal: `Reveal ${n}`, leaderboard: Q.standingsTitle }[s.phase];
 }
 
 // ── Scoring ──────────────────────────────────────────────

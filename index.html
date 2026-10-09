@@ -496,7 +496,7 @@
     const teams = ((game && game.teams) || []).filter((t) => t.players);
     const mine = teams.find((t) => t.id === me.team);
     const done = scoredUpTo(final ? QUESTIONS.length : (game.qIndex || 0) + 1);
-    v.append(el("p", "eyebrow", final ? "Final results" : `After ${QUESTIONS[game.qIndex].roundTitle}`), teamBadge(me.team));
+    v.append(el("p", "eyebrow", final ? "Final results" : QUESTIONS[game.qIndex].standingsTitle), teamBadge(me.team));
     if (mine) {
       if (final && mine.rank === 1) v.append(el("div", "big-icon", "🏆"));
       v.append(el("h1", null, final && mine.rank === 1 ? "Your team won!" : `Your team is ${ordinal(mine.rank)}`));
@@ -508,7 +508,7 @@
     const s1 = el("div", "stat"); s1.append(el("b", null, fmt(me.score)), el("span", null, "you've added"));
     const s2 = el("div", "stat"); s2.append(el("b", null, `${me.correct || 0}/${done}`), el("span", null, "fully right"));
     stats.append(s1, s2);
-    v.append(stats, el("p", "note", final ? "Thanks for playing!" : "Next video coming up…"));
+    v.append(stats, el("p", "note", final ? "Thanks for playing!" : /halftime/i.test(QUESTIONS[game.qIndex].standingsTitle) ? "Second half coming up…" : "Next video coming up…"));
     return v;
   }
 </script>

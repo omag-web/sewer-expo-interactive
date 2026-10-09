@@ -444,7 +444,7 @@
     if (!game) return;
     const { phase, qIndex } = game;
     const label = phase === "lobby" ? "Lobby" : phase === "final" ? "Final results" :
-      `${qShort(qIndex)} · ${{ video: "Video", question: "Answering", reveal: "Reveal", leaderboard: "Standings" }[phase]}`;
+      phase === "leaderboard" ? QUESTIONS[qIndex].standingsTitle : `${qShort(qIndex)} · ${{ video: "Video", question: "Answering", reveal: "Reveal" }[phase]}`;
     $("phase").textContent = label;
     $("phaseMeta").textContent = phase === "lobby" ? "Players are joining" :
       phase === "video" ? "Video is playing on the screen — the first question opens by itself when it ends" :
