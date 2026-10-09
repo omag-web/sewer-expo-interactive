@@ -69,7 +69,7 @@ export const GAME = {
 
   // Type this on the screen or the player page (on a keyboard, not in a text box)
   // to jump to the admin console — same idea as the AI Control Room's code word.
-  adminCode: "beneath"
+  adminCode: "admin"
 };
 
 // Players pick one of these when they join. Change TEAM_COUNT to add or
