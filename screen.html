@@ -173,7 +173,7 @@
   import { onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qLabel,
-    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt
+    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError
   } from "./game.js";
 
   setLogo($("logo"));
@@ -209,8 +209,15 @@
       if (q != null) ansUnsub = onSnapshot(query(answersCol, where("q", "==", q)), (a) => { answers = a.docs.map((d) => d.data()); update(); });
     }
     render();
-  }, (e) => console.error(e));
-  onSnapshot(playersCol, (s) => { players = s.docs.map((d) => ({ id: d.id, ...d.data() })); update(); }, (e) => console.error(e));
+  }, showErr);
+  onSnapshot(playersCol, (s) => { players = s.docs.map((d) => ({ id: d.id, ...d.data() })); update(); }, showErr);
+  function showErr(e) {
+    console.error(e);
+    const x = explainError(e);
+    const v = el("div", "view"); v.style.cssText = "justify-content:center;align-items:center;text-align:center;gap:2vh";
+    v.append(el("h1", null, "⚠️ " + x.title), el("p", "explain", x.msg), el("p", "eyebrow", x.code || ""));
+    body.replaceChildren(v); viewKey = "error";
+  }
 
   // Full rebuild when the phase or question changes; light updates otherwise.
   function render() {

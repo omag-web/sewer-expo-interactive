@@ -131,7 +131,7 @@
   import { doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, auth, db, gameRef, answerId, $, el, setLogo, choiceMark, qLabel,
-    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo
+    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError
   } from "./game.js";
 
   document.title = GAME.title;
@@ -197,7 +197,10 @@
 
   function showFatal(e) {
     console.error(e);
-    swap(viewMsg("⚠️", "Can't connect", "Check your signal and reload the page."), "fatal");
+    const x = explainError(e);
+    const v = viewMsg("⚠️", x.title, x.msg);
+    if (x.code) v.append(el("p", "note", x.code));
+    swap(v, "fatal");
   }
 
   // ── Render ───────────────────────────────────────────

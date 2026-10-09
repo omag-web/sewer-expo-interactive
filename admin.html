@@ -155,7 +155,7 @@
   import {
     GAME, QUESTIONS, auth, db, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qShort, qLabel, scoredUpTo,
     teamById, stepsFor, nextStep, prevStep, describeStep, pointsFor, grade, rankPlayers, teamStandings,
-    teamValueLabel, remainingMs, timeLimitFor, fmt
+    teamValueLabel, remainingMs, timeLimitFor, fmt, explainError
   } from "./game.js";
 
   setLogo($("logo"));
@@ -190,11 +190,16 @@
   $("signin").onsubmit = async (e) => {
     e.preventDefault(); $("signErr").textContent = "";
     try { await signInWithEmailAndPassword(auth, $("email").value.trim(), $("pass").value); }
-    catch (x) { $("signErr").textContent = "Sign-in failed. Check the email and password."; }
+    catch (x) { console.error(x); $("signErr").textContent = /unauthorized-domain/.test(x.code) ? explainError(x).msg : `Sign-in failed. Check the email and password. (${x.code || "error"})`; }
   };
   $("signOut").onclick = () => signOut(auth);
 
-  function fail(e) { console.error(e); toast(e.code === "permission-denied" ? "Permission denied — is this account a host?" : "Connection problem: " + e.message); }
+  function fail(e) {
+    console.error(e);
+    toast(e.code === "permission-denied"
+      ? "Permission denied — the game rules aren't published, or this login isn't email/password."
+      : `${explainError(e).msg} (${e.code || "error"})`);
+  }
   function toast(msg) {
     const t = el("div", "toast", msg); document.body.append(t);
     setTimeout(() => t.remove(), 3500);

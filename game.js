@@ -189,3 +189,18 @@ export const ordinal = (n) => {
   const s = ["th", "st", "nd", "rd"], v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 };
+
+// Plain-English reason for a Firebase error, shown on screen so setup
+// problems are obvious instead of a generic "can't connect".
+export function explainError(e) {
+  const code = (e && e.code) || "";
+  if (code === "auth/admin-restricted-operation" || code === "auth/operation-not-allowed")
+    return { title: "Setup needed", msg: "Anonymous sign-in is turned off. Firebase console → Authentication → Sign-in method → enable Anonymous.", code };
+  if (code === "auth/unauthorized-domain")
+    return { title: "Setup needed", msg: `This site (${location.hostname}) isn't an authorized domain. Firebase console → Authentication → Settings → Authorized domains → add it.`, code };
+  if (code === "permission-denied")
+    return { title: "Setup needed", msg: "Firestore rules are blocking the game. Paste the game block from firestore.rules into the Firebase rules and publish.", code };
+  if (code === "unavailable" || code === "auth/network-request-failed")
+    return { title: "Can't connect", msg: "Check your signal and reload the page.", code };
+  return { title: "Something went wrong", msg: (e && e.message) || "Reload the page and try again.", code };
+}
