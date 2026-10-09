@@ -128,7 +128,7 @@ export function describeStep(s) {
   if (s.phase === "lobby") return "Lobby";
   const Q = QUESTIONS[s.qIndex];
   const n = qShort(s.qIndex);
-  return { video: `Play ${Q.roundTitle}`, question: `Open ${n}`, reveal: `Reveal ${n}`, leaderboard: Q.standingsTitle }[s.phase];
+  return { video: `Play ${Q.roundTitle}`, question: `Open ${n}`, reveal: "Close voting & show results", leaderboard: Q.standingsTitle }[s.phase];
 }
 
 // ── Scoring ──────────────────────────────────────────────
