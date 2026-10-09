@@ -29,7 +29,7 @@ The admin page reveals automatically when time runs out or everyone has answered
 1. **Repo** — put these files in a new repo (e.g. `omag-web/sewer-expo-game`) and turn on GitHub Pages (Settings → Pages → main / root).
 2. **Firebase → Authentication → Sign-in method** — enable **Anonymous** (players). Email/Password is already on for the wall.
 3. **Firebase → Authentication → Settings → Authorized domains** — make sure `omag-web.github.io` is listed (it should be, from the wall).
-4. **Firestore rules** — paste the game block from `firestore.rules` *below* the wall's existing rules and publish.
+4. **Firestore rules** — `firestore.rules` is the complete file (Expo Wall + game). Replace everything in Firebase → Firestore → Rules with it and publish.
    ⚠️ Check the wall's rules first: anything that only checks `request.auth != null` would now let anonymous players through. Change those checks to `request.auth.token.firebase.sign_in_provider == 'password'` (same as `isGameHost()`).
 5. **Content** — edit `ROUNDS` in `config.js`: one entry per video with its file and correct answers. Drop video files in `/video` (MP4, keep each under ~100 MB) or use a YouTube ID.
 

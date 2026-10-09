@@ -2,24 +2,57 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ───────────────────────────────────────────────────────────
-    // KEEP the Expo Wall's existing rules here (posts, wall, etc.).
-    // Paste the block below the wall rules — don't replace them.
-    // ───────────────────────────────────────────────────────────
-
-
-    // ── Expo Showdown game ─────────────────────────────────────
-    // Players sign in anonymously; the host signs in with the same
-    // email/password account used on the wall's moderate page.
-    // Same moderator list as the wall's isMod(). If you paste this block under the
-    // wall rules, you can replace the body with: return isMod();
-    function isGameHost() {
+    // Moderator accounts. Create these users in Firebase Auth first,
+    // then list their emails here. They can moderate the wall AND run the game.
+    function isMod() {
       return request.auth != null
-        && request.auth.token.email in ['mburleson@omag.org', 'rmann@omag.org'];
+        && request.auth.token.email in [
+          'mburleson@omag.org',
+          'rmann@omag.org'
+        ];
+    }
+
+    function validPhoto(d) {
+      return !('image' in d)
+        || (d.image is string
+            && d.image.size() < 900000
+            && d.image.matches('data:image/jpeg;base64,[A-Za-z0-9+/=]+'));
+    }
+
+    // ── Expo Wall ──────────────────────────────────────────────
+
+    // Attendee submissions. Anyone can create a pending post; only
+    // moderators can read or change them. A post needs text, a photo, or both.
+    match /posts/{postId} {
+      allow create: if
+        request.resource.data.keys().hasOnly(['name', 'org', 'message', 'image', 'status', 'createdAt'])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.message is string
+        && request.resource.data.message.size() <= 200
+        && (request.resource.data.message.size() > 0 || 'image' in request.resource.data)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 40
+        && request.resource.data.org is string
+        && request.resource.data.org.size() <= 60
+        && validPhoto(request.resource.data);
+      allow read, update, delete: if isMod();
+    }
+
+    // Approved posts. Public read for the display; moderator write only.
+    match /wall/{postId} {
+      allow read: if true;
+      allow write: if isMod();
+    }
+
+    // ── What Lies Beneath game ─────────────────────────────────
+    // Players sign in anonymously; the admin page uses a moderator login above.
+    function isGameHost() {
+      return isMod();
     }
 
     function validName(n) {
-      return n is string && n.size() >= 2 && n.size() <= 24;   // 24 = GAME.maxNameLength
+      return n is string && n.size() >= 2 && n.size() <= 24;
     }
 
     function gameDoc(gameId) {
@@ -77,10 +110,10 @@ service cloud.firestore {
         allow delete: if isGameHost();
       }
 
+      // One answer per player per question (create-only, id = uid_q).
       match /answers/{answerId} {
         allow read: if true;
 
-        // One answer per player per question (create-only, id = uid_q).
         allow create: if request.auth != null
           && request.resource.data.keys().hasOnly(['uid', 'q', 'picks', 'name', 'team', 'at'])
           && request.resource.data.uid == request.auth.uid
