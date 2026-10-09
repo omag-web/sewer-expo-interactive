@@ -33,7 +33,8 @@
     body > main { flex: 1; min-height: 0; width: 100%; overflow-y: auto; }
     body > main:has(#console:not([hidden])) { overflow: hidden; padding-bottom: 0; }
     #console:not([hidden]) { height: 100%; align-items: stretch; }
-    #console > .stack:first-child { overflow-y: auto; min-height: 0; padding: 0 6px 20px 0; align-content: start; }
+    #console > .stack:first-child { overflow-y: auto; min-height: 0; padding: 0 0 20px; align-content: start; scrollbar-width: none; }
+    #console > .stack:first-child::-webkit-scrollbar { display: none; }
     #console > .side { position: static; overflow-y: auto; min-height: 0; padding-bottom: 20px; align-content: start; }
   }
   .pv { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid var(--edge); }
