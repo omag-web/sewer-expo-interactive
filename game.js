@@ -19,13 +19,11 @@ export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) =>
     if (t.scale) o.mark = o.label;
     return o;
   });
-  const notes = r.notes || {};
-  const cue = (x) => (x == null ? null : typeof x === "string" ? { say: x } : x);
   if (t.scale) return {
     id: t.id, q: t.q, scale: true, unscored: true, multi: false, time: t.time, choices, answer: [],
     low: t.low, high: t.high, explain: "",
     round: ri, roundTitle: r.title || `Video ${ri + 1}`, step: k, steps: ROUND_QUESTIONS.length,
-    video: k === 0 ? r.video : null, videoNotes: k === 0 ? cue(notes.video) : null, notes: cue(notes[t.id]),
+    video: k === 0 ? r.video : null,
     leaderboard: k === ROUND_QUESTIONS.length - 1, confIndex: -1
   };
   const raw = r.answers ? r.answers[t.id] : undefined;
@@ -40,7 +38,7 @@ export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) =>
     hasMeanings: choices.some((c) => c.meaning),
     explain: r.explain ? r.explain[t.id] : "",
     round: ri, roundTitle: r.title || `Video ${ri + 1}`, step: k, steps: ROUND_QUESTIONS.length,
-    video: k === 0 ? r.video : null, videoNotes: k === 0 ? cue(notes.video) : null, notes: cue(notes[t.id]),
+    video: k === 0 ? r.video : null,
     leaderboard: k === ROUND_QUESTIONS.length - 1,
     confIndex: confAt >= 0 && confAt < k ? base + confAt : -1
   };

@@ -124,9 +124,6 @@ export const ROUND_QUESTIONS = [
 //   answers  correct answers, written exactly as the choice labels above
 //            (capitals don't matter). "seen" can list several.
 //   explain  optional one-liners shown on the screen at each reveal
-//   notes    optional presenter cues, shown only on the admin page:
-//            { video, confidence, seen, serious, action } — each a string, or
-//            { say, ask, reveal, land } like the AI Control Room cue cards
 //
 // SAMPLE — replace with the real videos and answers.
 // ─────────────────────────────────────────────────────────────
@@ -141,10 +138,6 @@ export const ROUNDS = [
     },
     explain: {
       serious: "Sample note — roots and a minor crack: clean it and keep an eye on it."
-    },
-    notes: {
-      video: { say: "Sample cue — watch for what's coming in at the joints." },
-      serious: { ask: "Sample cue — who picked Act Now? Why?", land: "Sample cue — roots come back; maintenance plan matters." }
     }
   },
   {

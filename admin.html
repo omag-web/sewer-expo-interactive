@@ -71,11 +71,6 @@
   .timer { font-family: var(--cond); font-size: 40px; font-weight: 700; color: var(--accent); }
   .timer.low { color: var(--bad); }
   .keys { color: var(--steel); font-size: 13px; margin: 8px 0 0; }
-  .cues { margin-top: 16px; display: grid; gap: 8px; }
-  .cue { display: grid; grid-template-columns: 70px 1fr; gap: 12px; align-items: start; background: var(--panel2); border-radius: 6px; padding: 10px 12px; }
-  .cue b { font-size: 12px; letter-spacing: .12em; padding: 3px 0; border-radius: 4px; text-align: center; color: var(--accent-ink); }
-  .cue.say b { background: #5b9bd5; } .cue.ask b { background: #e8c14f; } .cue.reveal b { background: #c77dcc; } .cue.land b { background: #6cc08b; }
-  .cue span { font-size: 17px; line-height: 1.4; }
   .qrow.round-start { margin-top: 8px; }
   #adminBadge { color: var(--accent); border: 1px solid var(--accent); background: transparent; letter-spacing: .1em; font-size: 13px; }
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--panel2); border: 1px solid var(--edge); padding: 10px 18px; border-radius: 8px; font-weight: 600; z-index: 10; }
@@ -130,7 +125,6 @@
           <button class="btn next" id="next">Start</button>
         </div>
         <p class="keys">Clicker / keyboard: → PageDown Space = next · ← PageUp = back</p>
-        <div class="cues" id="cues" hidden></div>
         <div class="qprev" id="qprev" hidden></div>
       </div>
       <div class="card">
@@ -411,7 +405,6 @@
 
     $("redoQ").hidden = ["lobby", "final", "leaderboard"].includes(phase);
     renderTimer();
-    renderCues();
     renderPreview();
     renderQList();
     renderBoards();
@@ -437,20 +430,6 @@
       if (r <= 0) { clearInterval(tick); tick = null; }
     };
     upd(); tick = setInterval(upd, 250);
-  }
-
-  function renderCues() {
-    const box = $("cues"); box.replaceChildren();
-    if (["lobby", "final", "leaderboard"].includes(game.phase)) { box.hidden = true; return; }
-    const Q = QUESTIONS[game.qIndex];
-    const cue = game.phase === "video" ? Q.videoNotes : Q.notes;
-    box.hidden = !cue;
-    if (!cue) return;
-    ["say", "ask", "reveal", "land"].forEach((k) => {
-      if (!cue[k]) return;
-      const c = el("div", `cue ${k}`); c.append(el("b", null, k.toUpperCase()), el("span", null, cue[k]));
-      box.append(c);
-    });
   }
 
   function renderPreview() {

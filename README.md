@@ -10,7 +10,7 @@ Static site (GitHub Pages) + the Expo Wall's existing Firebase project (`sewer-e
 |---|---|---|
 | `index.html` | Attendees' phones | Join (name + team), answer, see correct/incorrect, team standing. **Key** button shows the decision key anytime. |
 | `screen.html` | Projector / ProPresenter web view | Lobby with QR + decision key, videos, live answer bars, bell curve, team standings, finale. Click once to start (unlocks video sound). `F` = full screen, `C` = show cursor. |
-| `admin.html` | Presenter | Admin console: run of show, Next/Back (clicker keys work), cue cards, live answers, team board, roster (remove a player), Redo this question, Reset scores, Reset game. Sign in with the Expo Wall moderator login. |
+| `admin.html` | Presenter | Admin console: run of show, Next/Back (clicker keys work), live answers, team board, roster (remove a player), Redo this question, Reset scores, Reset game. Sign in with the Expo Wall moderator login. |
 
 ## Each video round
 
@@ -35,7 +35,7 @@ The admin page reveals automatically when time runs out or everyone has answered
 ## Editing
 
 Everything editable is in `config.js`:
-- `ROUNDS` — videos, correct answers, reveal notes, presenter cues (`say` / `ask` / `reveal` / `land`)
+- `ROUNDS` — videos, correct answers, reveal notes
 - `ROUND_QUESTIONS` — the questions asked after every video and their choices
 - `DECISIONS` — the decision key
 - `TEAMS` — team names and colors
