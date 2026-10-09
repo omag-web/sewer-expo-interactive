@@ -14,6 +14,7 @@
   /* Built for a 16:9 display; everything scales with the viewport. */
   html, body { height: 100%; overflow: hidden; }
   body { font-size: 1.6vh; }
+  .soundhint { position: absolute; left: 50%; bottom: 4vh; transform: translateX(-50%); background: rgba(0,0,0,.7); color: #fff; padding: 1vh 1.6vw; border-radius: 99px; font-size: 2.4vh; font-weight: 600; z-index: 2; }
   /* small full-screen toggle, bottom-right corner */
   #fsBtn {
     position: fixed; right: 1.2vw; bottom: 1.6vh; z-index: 40;
@@ -39,9 +40,6 @@
   h1 { font-family: var(--cond); font-weight: 700; margin: 0; line-height: .95; }
 
   /* Start overlay (one click unlocks video sound) */
-  #start { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; background: rgba(24,23,22,.94); cursor: pointer; text-align: center; }
-  #start h1 { font-size: 7vh; }
-  #start p { color: var(--muted); font-size: 2.6vh; margin: 0; }
 
   /* Lobby */
   .lobby { display: grid; grid-template-columns: 34vw 1fr; gap: 3vw; flex: 1; min-height: 0; }
@@ -214,11 +212,6 @@
     <path class="fs-out" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" style="display:none"/>
   </svg>
 </button>
-<div id="start">
-  <h1 id="startTitle">What Lies Beneath</h1>
-  <p>Click anywhere to start the display (enables video sound and full screen).</p>
-  <p style="font-size:2vh">Press F or the corner button for full screen · type the admin code to open the console</p>
-</div>
 
 <script type="module">
   import { onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -228,10 +221,10 @@
   } from "./game.js";
   import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  // ?preview=1 = the small mirror on the admin page: no start overlay, muted,
+  // ?preview=1 = the small mirror on the admin page: muted,
   // and it never tells the admin a video ended (only the real screen does that).
   const PREVIEW = new URLSearchParams(location.search).get("preview") === "1";
-  if (PREVIEW) { document.getElementById("start").remove(); document.body.classList.add("preview"); }
+  if (PREVIEW) document.body.classList.add("preview");
 
   // the screen signs in quietly so it can tell the admin page a video has ended
   if (!PREVIEW) onAuthStateChanged(auth, (u) => { if (!u) signInAnonymously(auth).catch((e) => console.warn("screen sign-in", e)); });
@@ -243,7 +236,6 @@
 
   setLogo($("logo"));
   $("ttl").textContent = GAME.title;
-  if ($("startTitle")) $("startTitle").textContent = GAME.title;
   document.title = `Screen · ${GAME.title}`;
 
   const joinUrl = GAME.joinUrl || new URL("./" + (location.search.includes("emulator=1") ? "?emulator=1" : ""), location.href).href;
@@ -262,11 +254,15 @@
     $("fsBtn").setAttribute("aria-label", on ? "Exit full screen" : "Enter full screen");
   });
 
-  if (!PREVIEW) $("start").onclick = () => {
-    $("start").remove();
-    document.documentElement.requestFullscreen?.().catch(() => {});
-    viewKey = null; render(); // retry a video that was blocked before the click
+  // Browsers only allow video sound after someone has clicked or pressed a key on
+  // the page. If a video had to start muted, the first click or key turns the sound on.
+  const unmute = () => {
+    if (PREVIEW) return;
+    document.querySelectorAll(".vwrap video").forEach((v) => { if (v.muted) v.muted = false; });
+    if (yt && yt.isMuted && yt.isMuted()) yt.unMute();
   };
+  addEventListener("pointerdown", unmute);
+  addEventListener("keydown", unmute);
   addEventListener("keydown", (e) => {
     if (e.key === "f" || e.key === "F") document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
   });
@@ -402,12 +398,21 @@
       wrap.append(vid);
       vid.play().catch(() => {
         // autoplay with sound blocked: try muted rather than showing nothing
-        vid.muted = true; vid.play().catch(() => failed("Click the screen once to allow video, then go back and replay."));
+        vid.muted = true; vid.play().catch(() => failed("This video couldn't start."));
+        if (!PREVIEW) showSoundHint(wrap);
       });
     } else {
       ready();
     }
     return v;
+  }
+
+  // Small note on a muted video so the presenter knows one click brings the sound back
+  function showSoundHint(wrap) {
+    const h = el("div", "soundhint", "🔇 Click anywhere for sound");
+    wrap.append(h);
+    const off = () => { h.remove(); removeEventListener("pointerdown", off); removeEventListener("keydown", off); };
+    addEventListener("pointerdown", off); addEventListener("keydown", off);
   }
 
   function loadYT() {
