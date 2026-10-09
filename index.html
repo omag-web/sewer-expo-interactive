@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#181716">
+<title>What Lies Beneath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<style>
+  body { display: flex; flex-direction: column; }
+  header {
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 10px;
+    border-bottom: 4px solid var(--accent);
+    display: flex; align-items: center; gap: 12px;
+  }
+  header .logo { max-height: 40px; max-width: 120px; object-fit: contain; display: block; }
+  header .me { text-align: right; min-width: 0; flex: 1; }
+  header .me .nm { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  header .me .sc { font-family: var(--cond); font-size: 21px; line-height: 1.05; font-weight: 700; }
+  .keybtn { flex: none; min-height: 40px; padding: 6px 12px; border-radius: 6px; border: 2px solid var(--edge); background: transparent; font-weight: 700; font-size: 15px; cursor: pointer; }
+  main {
+    flex: 1; width: 100%; max-width: 560px; margin: 0 auto;
+    padding: 20px 16px calc(28px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column;
+  }
+  .view { display: flex; flex-direction: column; gap: 14px; flex: 1; animation: rise .3s ease; }
+  h1 { font-family: var(--cond); font-weight: 700; font-size: 44px; line-height: .95; margin: 0; }
+  h2 { font-family: var(--cond); font-weight: 700; font-size: 32px; line-height: 1; margin: 0; }
+  .eyebrow { color: var(--accent); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; margin: 0; }
+  .sub { color: var(--muted); font-size: 17px; line-height: 1.4; margin: 0; }
+  label.lbl { font-weight: 600; font-size: 16px; margin-bottom: -6px; }
+
+  /* Join */
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .team-btn {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    min-height: 78px; padding: 12px 14px; border-radius: 8px; cursor: pointer;
+    background: var(--panel); border: 2px solid var(--edge); text-align: left;
+    font-family: var(--cond); font-weight: 700; font-size: 22px; line-height: 1;
+  }
+  .team-btn .bar { width: 34px; height: 6px; border-radius: 3px; background: var(--tc); }
+  .team-btn[aria-pressed="true"] { border-color: var(--tc); background: color-mix(in srgb, var(--tc) 22%, var(--panel)); }
+  .err { color: var(--bad); font-weight: 600; min-height: 1.2em; margin: 0; }
+
+  .center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; }
+  .big-icon { font-size: 60px; line-height: 1; }
+  .team-badge { display: inline-flex; align-items: center; gap: 10px; padding: 8px 18px; border-radius: 999px; border: 2px solid var(--tc); font-family: var(--cond); font-weight: 700; font-size: 24px; }
+  .team-badge .team-dot { background: var(--tc); width: 14px; height: 14px; }
+
+  /* Question */
+  .qhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .timer { font-family: var(--cond); font-weight: 700; font-size: 34px; min-width: 2ch; text-align: right; color: var(--accent); }
+  .timer.low { color: var(--bad); }
+  .tbar { height: 8px; border-radius: 4px; background: var(--panel2); overflow: hidden; }
+  .tbar > i { display: block; height: 100%; background: var(--accent); width: 100%; transform-origin: left; }
+  .qtext { font-size: 24px; font-weight: 700; line-height: 1.25; margin: 0; }
+  .qhint { color: var(--accent); font-weight: 700; font-size: 15px; margin: -6px 0 0; }
+  .choices { display: grid; gap: 8px; }
+  .choice {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    min-height: 56px; padding: 10px 12px; border-radius: 8px; cursor: pointer;
+    background: var(--panel); border: 2px solid var(--edge); border-left: 10px solid var(--c);
+    text-align: left; font-size: 18px; font-weight: 600; line-height: 1.2;
+  }
+  .choice .lt { font-family: var(--cond); font-weight: 700; font-size: 24px; color: var(--c); width: 1.3em; flex: none; text-align: center; }
+  .choice .txt { flex: 1; min-width: 0; }
+  .choice .txt small { display: block; font-size: 14px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+  .choice .box { width: 26px; height: 26px; border-radius: 5px; border: 2px solid var(--edge); flex: none; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; }
+  .choice.picked { background: color-mix(in srgb, var(--c) 26%, var(--panel)); border-color: var(--c); }
+  .choice.picked .box { background: var(--c); border-color: var(--c); color: var(--accent-ink); }
+  .choice.picked .box::after { content: "✓"; }
+  .choice:disabled { cursor: default; }
+  .choice.dim { opacity: .35; }
+  .tagline { color: var(--accent); font-family: var(--cond); font-weight: 700; font-size: 21px; line-height: 1.15; margin: -4px 0 0; }
+  .choices.scale { grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .choices.scale .choice { min-height: 76px; justify-content: center; padding: 0; border-left-width: 2px; border-top: 8px solid var(--c); }
+  .choices.scale .choice .lt { font-size: 38px; width: auto; color: var(--text); }
+  .scale-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 14px; font-weight: 600; margin-top: -6px; }
+  .hist { display: flex; align-items: flex-end; gap: 10px; height: 170px; width: 100%; padding: 0 6px; }
+  .hcol { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
+  .hcol i { display: block; width: 100%; background: var(--panel2); border-radius: 5px 5px 0 0; min-height: 3px; }
+  .hcol.me i { background: var(--accent); }
+  .hcol b { font-size: 14px; color: var(--muted); }
+  .hcol span { font-family: var(--cond); font-weight: 700; font-size: 20px; }
+  .locked { text-align: center; font-weight: 600; color: var(--muted); margin: 0; }
+
+  /* Reveal */
+  .result { font-family: var(--cond); font-weight: 700; font-size: 56px; line-height: .9; }
+  .result.good { color: var(--good); } .result.part { color: var(--a0); } .result.bad { color: var(--bad); }
+  .pts { font-family: var(--cond); font-weight: 700; font-size: 40px; color: var(--accent); }
+  .anslist { width: 100%; display: grid; gap: 6px; text-align: left; }
+  .anslist h4 { margin: 4px 0 0; font-size: 14px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+  .arow { display: flex; align-items: center; gap: 10px; background: var(--panel); border-radius: 8px; padding: 10px 12px; border-left: 6px solid var(--c); font-weight: 600; }
+  .arow .ic { margin-left: auto; font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .arow.ok .ic { color: var(--good); } .arow.miss .ic { color: var(--a0); } .arow.bad .ic { color: var(--bad); }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+  .stat { background: var(--panel); border-radius: 8px; padding: 14px; text-align: center; }
+  .stat b { display: block; font-family: var(--cond); font-size: 42px; line-height: 1; color: var(--accent); }
+  .stat span { color: var(--muted); font-weight: 600; font-size: 14px; }
+  .note { color: var(--steel); font-size: 14px; text-align: center; margin: 0; }
+
+  /* Decision key sheet */
+  .sheet { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; }
+  .sheet .panel { background: var(--panel); width: 100%; max-width: 560px; border-radius: 14px 14px 0 0; padding: 18px 16px calc(20px + env(safe-area-inset-bottom, 0px)); animation: rise .25s ease; }
+  .sheet h2 { margin-bottom: 12px; }
+  .krow { display: grid; grid-template-columns: 30px 1fr; gap: 4px 10px; padding: 10px 0; border-top: 1px solid var(--edge); }
+  .krow .e { font-size: 22px; grid-row: span 2; }
+  .krow b { font-family: var(--cond); font-size: 22px; color: var(--c); text-transform: uppercase; }
+  .krow span { color: var(--muted); }
+  .sheet .btn { width: 100%; margin-top: 12px; }
+</style>
+</head>
+<body class="grid-bg">
+<header>
+  <img class="logo" id="logo" hidden>
+  <div class="me" id="me" hidden>
+    <div class="nm" id="meName"></div>
+    <div class="sc" id="meTeam"></div>
+  </div>
+  <button class="keybtn" id="keyBtn" type="button">Key</button>
+</header>
+<main id="main">
+  <div class="view center"><p class="sub">Connecting…</p></div>
+</main>
+
+<script type="module">
+  import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import {
+    GAME, TEAMS, DECISIONS, QUESTIONS, auth, db, gameRef, answerId, $, el, setLogo, choiceMark, qLabel,
+    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo
+  } from "./game.js";
+
+  document.title = GAME.title;
+  setLogo($("logo"));
+
+  let uid = null, game = null, me = null, myAnswer = null, ansUnsub = null, ansFor = null;
+  let pending = null;       // picks being written
+  let draft = new Set();    // multi-select picks before locking in
+  let tick = null, lastKey = null, joining = false, openedFor = null;
+
+  const main = $("main");
+  const playerRef = () => doc(db, "games", GAME.id, "players", uid);
+
+  // ── Decision key ─────────────────────────────────────
+  $("keyBtn").onclick = () => {
+    const s = el("div", "sheet"), p = el("div", "panel");
+    p.append(el("h2", null, "Decision key"));
+    DECISIONS.forEach((d) => {
+      const r = el("div", "krow"); r.style.setProperty("--c", d.color);
+      r.append(el("span", "e", d.emoji), el("b", null, d.label), el("span", null, d.meaning));
+      p.append(r);
+    });
+    const close = el("button", "btn ghost", "Close"); close.type = "button";
+    p.append(close); s.append(p);
+    s.onclick = (e) => { if (e.target === s || e.target === close) s.remove(); };
+    document.body.append(s);
+  };
+
+  // ── Auth / data ──────────────────────────────────────
+  onAuthStateChanged(auth, (u) => {
+    if (!u) { signInAnonymously(auth).catch(showFatal); return; }
+    if (uid === u.uid) return;
+    uid = u.uid;
+    onSnapshot(gameRef, (s) => {
+      const prev = game;
+      game = s.exists() ? s.data({ serverTimestamps: "estimate" }) : null;
+      if (game && game.phase === "question" && prev && (prev.phase !== "question" || prev.qIndex !== game.qIndex) && game.openedAt) {
+        noteLiveOpen(game.openedAt.toMillis());
+      }
+      watchAnswer();
+      // a question reopened by the admin (Redo) gets a fresh openedAt: let phones answer again
+      const opened = game && game.phase === "question" && game.openedAt ? game.openedAt.toMillis() : null;
+      if (opened && openedFor && opened !== openedFor && game.qIndex === ansFor) { pending = null; draft = new Set(); lastKey = null; }
+      if (opened) openedFor = opened;
+      render();
+    }, showFatal);
+    onSnapshot(playerRef(), (s) => { me = s.exists() ? s.data() : null; render(); }, showFatal);
+  });
+
+  function watchAnswer() {
+    const q = game ? game.qIndex : null;
+    if (q === ansFor) return;
+    if (ansUnsub) ansUnsub();
+    ansFor = q; myAnswer = null; pending = null; draft = new Set();
+    if (q == null) return;
+    ansUnsub = onSnapshot(doc(db, "games", GAME.id, "answers", answerId(uid, q)), (s) => {
+      const had = !!myAnswer;
+      myAnswer = s.exists() ? s.data() : null;
+      if (had && !myAnswer) { pending = null; draft = new Set(); } // answer cleared by a Redo
+      render();
+    });
+  }
+
+  function showFatal(e) {
+    console.error(e);
+    swap(viewMsg("⚠️", "Can't connect", "Check your signal and reload the page."), "fatal");
+  }
+
+  // ── Render ───────────────────────────────────────────
+  const picksNow = () => (myAnswer ? myAnswer.picks : pending);
+
+  function render() {
+    if (!uid) return;
+    $("me").hidden = !me;
+    if (me) {
+      const t = teamById(me.team);
+      const ts = ((game && game.teams) || []).find((x) => x.id === me.team);
+      $("meName").textContent = me.name;
+      $("meTeam").textContent = ts ? `${t.name} · ${fmt(ts.value)}` : t.name;
+      $("meTeam").style.color = t.color;
+    }
+    if (!me) { if (lastKey !== "join") swap(viewJoin(), "join"); return; }
+    const phase = game ? game.phase : "lobby";
+    const q = game ? game.qIndex : 0;
+    const teamSig = ((game && game.teams) || []).map((t) => `${t.id}${t.rank}${t.value}`).join();
+    const p = picksNow();
+    const key = `${phase}:${q}:${p ? p.join(",") : ""}:${myAnswer ? myAnswer.points ?? "" : ""}:${me.team}:${me.score}:${teamSig}`;
+    if (key === lastKey) return;
+
+    if (phase === "lobby") swap(viewLobby(), key);
+    else if (phase === "video") swap(viewMsg("📺", QUESTIONS[q].roundTitle, "Eyes on the big screen. Questions open right after the video."), key);
+    else if (phase === "question") swap(viewQuestion(q), key);
+    else if (phase === "reveal") swap(viewReveal(q), key);
+    else if (phase === "leaderboard") swap(viewStanding(false), key);
+    else if (phase === "final") swap(viewStanding(true), key);
+  }
+
+  function swap(node, key) {
+    lastKey = key;
+    clearInterval(tick); tick = null;
+    main.replaceChildren(node);
+  }
+
+  function viewMsg(icon, title, sub) {
+    const v = el("div", "view center");
+    v.append(el("div", "big-icon", icon), el("h2", null, title), el("p", "sub", sub));
+    return v;
+  }
+
+  // ── Join / edit ──────────────────────────────────────
+  function viewJoin(edit) {
+    const v = el("form", "view");
+    v.noValidate = true;
+    if (!edit) v.append(el("p", "eyebrow", GAME.eventLine1), el("h1", null, GAME.title),
+      el("p", "tagline", GAME.subtitle || ""),
+      el("p", "sub", "Enter your name and pick a team. Every answer scores points for your team — faster answers score more."));
+    else v.append(el("h2", null, "Change name or team"));
+    const lbl = el("label", "lbl", "Your name"); lbl.htmlFor = "nm";
+    const inp = el("input"); inp.type = "text"; inp.id = "nm"; inp.maxLength = GAME.maxNameLength;
+    inp.autocomplete = "name"; inp.placeholder = "First and last name";
+    inp.value = edit ? me.name : (localStorage.getItem("expoName") || "");
+    v.append(lbl, inp, el("label", "lbl", "Your team"));
+    let team = edit ? me.team : localStorage.getItem("expoTeam");
+    if (!TEAMS.some((t) => t.id === team)) team = null;
+    const grid = el("div", "teams");
+    TEAMS.forEach((t) => {
+      const b = el("button", "team-btn"); b.type = "button";
+      b.style.setProperty("--tc", t.color);
+      b.setAttribute("aria-pressed", String(t.id === team));
+      b.append(el("span", "bar"), el("span", null, t.name));
+      b.onclick = () => { team = t.id; grid.querySelectorAll(".team-btn").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); };
+      grid.append(b);
+    });
+    const err = el("p", "err");
+    const go = el("button", "btn", edit ? "Save" : "Join the game"); go.type = "submit";
+    v.append(grid, err, go);
+    if (edit) { const c = el("button", "btn ghost", "Cancel"); c.type = "button"; c.onclick = () => { lastKey = null; render(); }; v.append(c); }
+    v.onsubmit = async (e) => {
+      e.preventDefault();
+      const name = inp.value.trim().replace(/\s+/g, " ");
+      if (name.length < 2) { err.textContent = "Enter your name."; inp.focus(); return; }
+      if (!team) { err.textContent = "Pick a team."; return; }
+      if (joining) return;
+      joining = true; go.disabled = true; err.textContent = "";
+      try {
+        if (edit) await updateDoc(playerRef(), { name, team });
+        else await setDoc(playerRef(), { name, team, score: 0, correct: 0, answered: 0, streak: 0, joinedAt: serverTimestamp() });
+        localStorage.setItem("expoName", name); localStorage.setItem("expoTeam", team);
+        if (edit) { lastKey = null; render(); }
+      } catch (x) {
+        console.error(x);
+        err.textContent = edit ? "Teams lock once the game starts." : "Couldn't join. Check your signal and try again.";
+        go.disabled = false;
+      } finally { joining = false; }
+    };
+    return v;
+  }
+
+  function teamBadge(id) {
+    const t = teamById(id);
+    const b = el("span", "team-badge"); b.style.setProperty("--tc", t.color);
+    b.append(el("span", "team-dot"), document.createTextNode(t.name));
+    return b;
+  }
+
+  function viewLobby() {
+    const v = el("div", "view center");
+    v.append(el("div", "big-icon", "✅"), el("h2", null, "You're in!"), teamBadge(me.team),
+      el("p", "sub", "Hang tight — the game starts when the host kicks it off. Tap Key anytime to see what each decision means."));
+    const change = el("button", "btn ghost", "Change name or team");
+    change.onclick = () => swap(viewJoin(true), "edit");
+    v.append(change);
+    return v;
+  }
+
+  // ── Question ─────────────────────────────────────────
+  function choiceBody(c, k) {
+    const t = el("span", "txt", c.label);
+    if (c.meaning) t.append(el("small", null, c.meaning));
+    return [el("span", "lt", choiceMark(c, k)), t];
+  }
+
+  function viewQuestion(i) {
+    const Q = QUESTIONS[i];
+    const v = el("div", "view");
+    const head = el("div", "qhead");
+    head.append(el("p", "eyebrow", qLabel(i)));
+    const timer = el("div", "timer"); head.append(timer);
+    const bar = el("div", "tbar"); const fill = el("i"); bar.append(fill);
+    v.append(head, bar, el("p", "qtext", Q.q));
+    if (Q.multi) v.append(el("p", "qhint", "Pick all that apply, then lock in"));
+    if (Q.scale) v.append(el("p", "qhint", GAME.confidenceWager ? "Your confidence raises or lowers your points for this video" : "About what you just saw in the video"));
+
+    const locked = picksNow();
+    const list = el("div", Q.scale ? "choices scale" : "choices");
+    const btns = Q.choices.map((c, k) => {
+      const b = el("button", "choice"); b.type = "button";
+      b.style.setProperty("--c", c.color);
+      if (Q.scale) b.append(el("span", "lt", c.label)); else b.append(...choiceBody(c, k));
+      if (Q.multi) b.append(el("span", "box"));
+      if (locked) { b.disabled = true; b.classList.add(locked.includes(k) ? "picked" : "dim"); }
+      else if (Q.multi && draft.has(k)) b.classList.add("picked");
+      b.onclick = () => {
+        if (Q.multi) { draft.has(k) ? draft.delete(k) : draft.add(k); b.classList.toggle("picked", draft.has(k)); syncLock(); }
+        else submit(i, [k]);
+      };
+      list.append(b); return b;
+    });
+    v.append(list);
+    if (Q.scale) { const e = el("div", "scale-ends"); e.append(el("span", null, `1 · ${Q.low || ""}`), el("span", null, `${Q.high || ""} · 5`)); v.append(e); }
+
+    let lockBtn = null;
+    const syncLock = () => { if (lockBtn) { lockBtn.disabled = !draft.size; lockBtn.textContent = draft.size ? `Lock in ${draft.size} ${draft.size === 1 ? "pick" : "picks"}` : "Pick at least one"; } };
+    if (Q.multi && !locked) {
+      lockBtn = el("button", "btn"); lockBtn.type = "button";
+      lockBtn.onclick = () => submit(i, [...draft].sort((a, b) => a - b));
+      v.append(lockBtn); syncLock();
+    }
+    const status = el("p", "locked", locked ? "Locked in. Waiting for the reveal…" : "");
+    v.append(status);
+
+    const limit = (game.timeLimit || timeLimitFor(i)) * 1000;
+    const update = () => {
+      const r = remainingMs(game);
+      timer.textContent = Math.ceil(r / 1000);
+      timer.classList.toggle("low", r <= 5000);
+      fill.style.transform = `scaleX(${Math.min(1, r / limit)})`;
+      if (r <= 0) {
+        clearInterval(tick); tick = null;
+        if (!picksNow()) {
+          btns.forEach((b) => { b.disabled = true; b.classList.add("dim"); });
+          if (lockBtn) lockBtn.disabled = true;
+          status.textContent = "Time's up!";
+        }
+      }
+    };
+    update();
+    tick = setInterval(update, 200);
+    return v;
+  }
+
+  async function submit(i, picks) {
+    if (pending || myAnswer || !picks.length || remainingMs(game) <= 0) return;
+    pending = picks; lastKey = null; render();
+    try {
+      await setDoc(doc(db, "games", GAME.id, "answers", answerId(uid, i)), {
+        uid, q: i, picks, name: me.name, team: me.team, at: serverTimestamp()
+      });
+    } catch (x) {
+      console.error(x);
+      pending = null; lastKey = null; render();
+      const s = main.querySelector(".locked");
+      if (s) s.textContent = remainingMs(game) > 0 ? "That didn't go through — try again." : "Too late — time ran out.";
+    }
+  }
+
+  // ── Reveal ───────────────────────────────────────────
+  function viewReveal(i) {
+    const Q = QUESTIONS[i];
+    if (Q.scale) return viewScaleReveal(i);
+    const v = el("div", "view center");
+    const picks = myAnswer ? myAnswer.picks : null;
+    if (!picks) {
+      v.append(el("div", "big-icon", "⏱️"), el("div", "result bad", "No answer"), el("p", "sub", "Time ran out on that one."));
+    } else {
+      const g = grade(Q, picks);
+      if (g.exact) v.append(el("div", "big-icon", "✅"), el("div", "result good", "Correct!"));
+      else if (g.frac > 0) v.append(el("div", "big-icon", "👍"), el("div", "result part", "Partly right"), el("p", "sub", `You found ${g.hits} of ${g.total}${g.wrong ? ` · ${g.wrong} extra` : ""}`));
+      else v.append(el("div", "big-icon", "❌"), el("div", "result bad", "Not quite"));
+      if (myAnswer.points != null) v.append(el("div", "pts", `+${fmt(myAnswer.points)}`), el("p", "sub", "points for your team"));
+    }
+    // answer breakdown
+    const ans = new Set(Q.answer), mine = new Set(picks || []);
+    const list = el("div", "anslist");
+    list.append(el("h4", null, Q.answer.length > 1 ? "Correct answers" : "Correct answer"));
+    Q.choices.forEach((c, k) => {
+      const isAns = ans.has(k), picked = mine.has(k);
+      if (!isAns && !picked) return;
+      const cls = isAns ? (picked || !picks ? "ok" : "miss") : "bad";
+      const r = el("div", `arow ${cls}`); r.style.setProperty("--c", c.color);
+      const label = (c.emoji ? c.emoji + " " : "") + c.label;
+      r.append(el("span", null, label), el("span", "ic", isAns ? (picked ? "✓ You got it" : picks ? "Missed" : "") : "✗ Not in this one"));
+      list.append(r);
+    });
+    v.append(list);
+    return v;
+  }
+
+  function viewScaleReveal(i) {
+    const Q = QUESTIONS[i];
+    const v = el("div", "view center");
+    const mine = myAnswer ? myAnswer.picks[0] : null;
+    v.append(el("p", "eyebrow", Q.q));
+    v.append(el("h1", null, mine != null ? `You said ${Q.choices[mine].label}` : "No answer"));
+    const dist = (game.dist && game.dist.length === Q.choices.length) ? game.dist : null;
+    if (dist) {
+      const max = Math.max(1, ...dist);
+      const h = el("div", "hist");
+      dist.forEach((n, k) => {
+        const col = el("div", `hcol${k === mine ? " me" : ""}`);
+        const barEl = el("i"); barEl.style.height = `${(n / max) * 100}%`;
+        col.append(el("b", null, String(n)), barEl, el("span", null, Q.choices[k].label));
+        h.append(col);
+      });
+      v.append(h);
+      if (game.avg != null) v.append(el("p", "sub", `Room average: ${game.avg.toFixed(1)} of 5`));
+    }
+    if (GAME.confidenceWager && mine != null) {
+      const w = GAME.wager[mine + 1];
+      v.append(el("p", "note", `Wager for this video: ×${w.right} when right${w.wrong ? `, ${w.wrong} when wrong` : ""}`));
+    }
+    v.append(el("p", "note", "Now — what did you see?"));
+    return v;
+  }
+
+  // ── Standings ────────────────────────────────────────
+  function viewStanding(final) {
+    const v = el("div", "view center");
+    const teams = ((game && game.teams) || []).filter((t) => t.players);
+    const mine = teams.find((t) => t.id === me.team);
+    const done = scoredUpTo(final ? QUESTIONS.length : (game.qIndex || 0) + 1);
+    v.append(el("p", "eyebrow", final ? "Final results" : `After ${QUESTIONS[game.qIndex].roundTitle}`), teamBadge(me.team));
+    if (mine) {
+      if (final && mine.rank === 1) v.append(el("div", "big-icon", "🏆"));
+      v.append(el("h1", null, final && mine.rank === 1 ? "Your team won!" : `Your team is ${ordinal(mine.rank)}`));
+      v.append(el("p", "sub", `of ${teams.length} teams · ${fmt(mine.value)} ${teamValueLabel()}`));
+    } else {
+      v.append(el("h1", null, "Scores are in"));
+    }
+    const stats = el("div", "stats");
+    const s1 = el("div", "stat"); s1.append(el("b", null, fmt(me.score)), el("span", null, "you've added"));
+    const s2 = el("div", "stat"); s2.append(el("b", null, `${me.correct || 0}/${done}`), el("span", null, "fully right"));
+    stats.append(s1, s2);
+    v.append(stats, el("p", "note", final ? "Thanks for playing!" : "Next video coming up…"));
+    return v;
+  }
+</script>
+</body>
+</html>

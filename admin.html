@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#181716">
+<meta name="robots" content="noindex">
+<title>Admin · What Lies Beneath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<style>
+  header { padding: 14px 20px; border-bottom: 4px solid var(--accent); display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  header .logo { max-height: 40px; max-width: 150px; object-fit: contain; }
+  header h1 { font-family: var(--cond); font-size: 28px; margin: 0; line-height: 1; flex: 1; }
+  header .tools { display: flex; gap: 8px; flex-wrap: wrap; }
+  header .tools .btn { min-height: 40px; font-size: 17px; padding: 6px 14px; }
+  main { padding: 20px; max-width: 1280px; margin: 0 auto; }
+  .signin { max-width: 380px; margin: 60px auto; display: grid; gap: 12px; }
+  .signin h2 { font-family: var(--cond); font-size: 36px; margin: 0; }
+  .err { color: var(--bad); font-weight: 600; min-height: 1.2em; margin: 0; }
+  .muted { color: var(--muted); }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; padding: 18px; }
+  .card h3 { font-family: var(--cond); font-size: 22px; margin: 0 0 12px; letter-spacing: .02em; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .card h3 small { font-family: var(--body); font-size: 14px; color: var(--muted); font-weight: 500; }
+  .stack { display: grid; gap: 20px; }
+
+  .now { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  .now .phase { font-family: var(--cond); font-size: 40px; font-weight: 700; line-height: 1; }
+  .now .meta { color: var(--muted); font-weight: 600; }
+  .kpis { display: flex; gap: 10px; margin-left: auto; }
+  .kpi { background: var(--panel2); border-radius: 8px; padding: 8px 14px; text-align: center; min-width: 90px; }
+  .kpi b { display: block; font-family: var(--cond); font-size: 32px; line-height: 1; color: var(--accent); }
+  .kpi span { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .controls { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .controls .next { flex: 1; min-height: 72px; font-size: 30px; }
+  .controls .back { min-height: 72px; }
+
+  .qprev { margin-top: 18px; border-top: 1px solid var(--edge); padding-top: 16px; }
+  .qprev .qt { font-size: 20px; font-weight: 600; line-height: 1.3; margin: 0 0 12px; }
+  .opt { display: grid; grid-template-columns: 28px 1fr 60px; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 6px; background: var(--panel2); margin-bottom: 6px; position: relative; overflow: hidden; }
+  .opt .fill { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--c) 28%, transparent); width: 0; transition: width .4s ease; }
+  .opt > *:not(.fill) { position: relative; }
+  .opt .lt { font-family: var(--cond); font-weight: 700; font-size: 22px; color: var(--c); }
+  .opt .n { text-align: right; font-weight: 700; }
+  .opt.right { outline: 2px solid var(--good); }
+  .opt.right .lt::after { content: " ✓"; color: var(--good); }
+  .tag { display: inline-block; font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: var(--panel2); color: var(--accent); margin-right: 6px; }
+
+  .qlist { display: grid; gap: 6px; max-height: 420px; overflow: auto; }
+  .qrow { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 6px; background: var(--panel2); cursor: pointer; border: 2px solid transparent; text-align: left; }
+  .qrow:hover { border-color: var(--edge); }
+  .qrow.cur { border-color: var(--accent); }
+  .qrow .num { font-family: var(--cond); font-weight: 700; font-size: 20px; color: var(--accent); }
+  .qrow .txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qrow .st { font-size: 13px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+
+  .board { display: grid; gap: 4px; }
+  .brow { display: grid; grid-template-columns: 30px 14px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 6px; background: var(--panel2); }
+  .brow .rk { font-family: var(--cond); font-weight: 700; color: var(--muted); }
+  .brow .sc { font-weight: 700; color: var(--accent); }
+  .roster { display: grid; gap: 4px; max-height: 360px; overflow: auto; }
+  .prow { display: grid; grid-template-columns: 14px 1fr auto auto; gap: 8px; align-items: center; padding: 5px 8px; border-radius: 6px; background: var(--panel2); font-size: 15px; }
+  .prow .x { background: none; border: 0; color: var(--steel); cursor: pointer; font-size: 18px; padding: 0 4px; line-height: 1; }
+  .prow .x:hover { color: var(--bad); }
+  .filter { margin-bottom: 8px; font-size: 16px !important; padding: 8px 12px !important; }
+  .timer { font-family: var(--cond); font-size: 40px; font-weight: 700; color: var(--accent); }
+  .timer.low { color: var(--bad); }
+  .keys { color: var(--steel); font-size: 13px; margin: 8px 0 0; }
+  .cues { margin-top: 16px; display: grid; gap: 8px; }
+  .cue { display: grid; grid-template-columns: 70px 1fr; gap: 12px; align-items: start; background: var(--panel2); border-radius: 6px; padding: 10px 12px; }
+  .cue b { font-size: 12px; letter-spacing: .12em; padding: 3px 0; border-radius: 4px; text-align: center; color: var(--accent-ink); }
+  .cue.say b { background: #5b9bd5; } .cue.ask b { background: #e8c14f; } .cue.reveal b { background: #c77dcc; } .cue.land b { background: #6cc08b; }
+  .cue span { font-size: 17px; line-height: 1.4; }
+  .qrow.round-start { margin-top: 8px; }
+  #adminBadge { color: var(--accent); border: 1px solid var(--accent); background: transparent; letter-spacing: .1em; font-size: 13px; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--panel2); border: 1px solid var(--edge); padding: 10px 18px; border-radius: 8px; font-weight: 600; z-index: 10; }
+</style>
+</head>
+<body>
+<header class="grid-bg">
+  <img class="logo" id="logo" hidden>
+  <h1 id="title">Admin Console</h1>
+  <span class="pill" id="adminBadge" hidden>● ADMIN MODE</span>
+  <div class="tools" id="tools" hidden>
+    <a class="btn ghost" id="openScreen" target="_blank" rel="noopener">Open screen ↗</a>
+    <button class="btn ghost" id="redoQ" hidden>Redo this question</button>
+    <button class="btn ghost" id="resetScores">Reset scores</button>
+    <button class="btn danger" id="resetAll">Reset game</button>
+    <button class="btn ghost" id="signOut">Sign out</button>
+  </div>
+</header>
+
+<main>
+  <form class="signin" id="signin" hidden>
+    <h2>Host sign-in</h2>
+    <p class="muted" style="margin:0">Same login as the Expo Wall moderator page.</p>
+    <input type="email" id="email" placeholder="Email" autocomplete="username" required>
+    <input type="password" id="pass" placeholder="Password" autocomplete="current-password" required>
+    <p class="err" id="signErr"></p>
+    <button class="btn" type="submit">Sign in</button>
+  </form>
+
+  <div id="setup" hidden class="card" style="max-width:520px;margin:40px auto;text-align:center">
+    <h3 style="justify-content:center">No game set up yet</h3>
+    <p class="muted">Creates game <b id="gid"></b> in the lobby so players can start joining.</p>
+    <button class="btn" id="createGame">Set up game</button>
+  </div>
+
+  <div id="console" hidden class="layout">
+    <div class="stack">
+      <div class="card">
+        <div class="now">
+          <div>
+            <div class="phase" id="phase">—</div>
+            <div class="meta" id="phaseMeta"></div>
+          </div>
+          <div class="timer" id="timer" hidden></div>
+          <div class="kpis">
+            <div class="kpi"><b id="kPlayers">0</b><span>players</span></div>
+            <div class="kpi"><b id="kAnswers">–</b><span>answered</span></div>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="btn ghost back" id="back">← Back</button>
+          <button class="btn next" id="next">Start</button>
+        </div>
+        <p class="keys">Clicker / keyboard: → PageDown Space = next · ← PageUp = back</p>
+        <div class="cues" id="cues" hidden></div>
+        <div class="qprev" id="qprev" hidden></div>
+      </div>
+      <div class="card">
+        <h3>Run of show <small>Click to jump</small></h3>
+        <div class="qlist" id="qlist"></div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h3>Teams <small id="teamMode"></small></h3>
+        <div class="board" id="teamBoard"></div>
+      </div>
+      <div class="card">
+        <h3>Roster <small>✕ removes a player</small></h3>
+        <input type="text" class="filter" id="filter" placeholder="Filter names">
+        <div class="roster" id="roster"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+  import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    onSnapshot, setDoc, updateDoc, deleteDoc, getDocs, query, where, doc, writeBatch,
+    serverTimestamp, arrayUnion, arrayRemove, increment
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import {
+    GAME, QUESTIONS, auth, db, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qShort, qLabel, scoredUpTo,
+    teamById, stepsFor, nextStep, prevStep, describeStep, pointsFor, grade, rankPlayers, teamStandings,
+    teamValueLabel, remainingMs, timeLimitFor, fmt
+  } from "./game.js";
+
+  setLogo($("logo"));
+  $("title").textContent = `${GAME.title} · Admin Console`;
+  $("gid").textContent = GAME.id;
+  const emu = location.search.includes("emulator=1") ? "?emulator=1" : "";
+  $("openScreen").href = "screen.html" + emu;
+  $("teamMode").textContent = GAME.teamScoring === "total" ? "Ranked by total points" : "Ranked by average points";
+
+  let game = null, players = [], answers = [], unsubs = [], ansUnsub = null, ansFor = null;
+  let busy = false, tick = null, autoTimer = null;
+
+  // ── Auth ─────────────────────────────────────────────
+  onAuthStateChanged(auth, (u) => {
+    unsubs.forEach((f) => f()); unsubs = [];
+    const isHost = u && !u.isAnonymous;
+    $("signin").hidden = !!isHost;
+    $("tools").hidden = !isHost;
+    $("adminBadge").hidden = !isHost;
+    if (!isHost) { $("console").hidden = true; $("setup").hidden = true; return; }
+    unsubs.push(onSnapshot(gameRef, (s) => {
+      game = s.exists() ? s.data({ serverTimestamps: "estimate" }) : null;
+      $("setup").hidden = !!game; $("console").hidden = !game;
+      watchAnswers(); render();
+    }, fail));
+    unsubs.push(onSnapshot(playersCol, (s) => {
+      players = s.docs.map((d) => ({ id: d.id, ...d.data() }));
+      render();
+    }, fail));
+  });
+
+  $("signin").onsubmit = async (e) => {
+    e.preventDefault(); $("signErr").textContent = "";
+    try { await signInWithEmailAndPassword(auth, $("email").value.trim(), $("pass").value); }
+    catch (x) { $("signErr").textContent = "Sign-in failed. Check the email and password."; }
+  };
+  $("signOut").onclick = () => signOut(auth);
+
+  function fail(e) { console.error(e); toast(e.code === "permission-denied" ? "Permission denied — is this account a host?" : "Connection problem: " + e.message); }
+  function toast(msg) {
+    const t = el("div", "toast", msg); document.body.append(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  function watchAnswers() {
+    const q = game ? game.qIndex : null;
+    if (q === ansFor) return;
+    if (ansUnsub) ansUnsub();
+    ansFor = q; answers = [];
+    if (q == null) return;
+    ansUnsub = onSnapshot(query(answersCol, where("q", "==", q)), (s) => {
+      answers = s.docs.map((d) => ({ id: d.id, ...d.data() }));
+      render();
+    }, fail);
+  }
+
+  $("createGame").onclick = () => run(() => setDoc(gameRef, freshGame()));
+  const freshGame = () => ({ phase: "lobby", qIndex: 0, scored: [], teams: [], openedAt: null, timeLimit: GAME.defaultTimeLimit, updatedAt: serverTimestamp() });
+
+  async function run(fn) {
+    if (busy) return;
+    busy = true; render();
+    try { await fn(); } catch (x) { fail(x); } finally { busy = false; render(); }
+  }
+
+  // ── Flow ─────────────────────────────────────────────
+  const isScored = (i) => (game.scored || []).includes(i);
+
+  function safePrev() {
+    let s = prevStep(game.phase, game.qIndex);
+    // never re-open a question that's already been scored
+    while (s && s.phase === "question" && isScored(s.qIndex)) s = prevStep(s.phase, s.qIndex);
+    return s;
+  }
+
+  async function goTo(s) {
+    if (!s) return;
+    clearTimeout(autoTimer); autoTimer = null;
+    if (s.phase === "question") {
+      if (isScored(s.qIndex)) s = { phase: "reveal", qIndex: s.qIndex };
+      else return updateDoc(gameRef, { phase: "question", qIndex: s.qIndex, openedAt: serverTimestamp(), timeLimit: timeLimitFor(s.qIndex), updatedAt: serverTimestamp() });
+    }
+    if (s.phase === "reveal" && !isScored(s.qIndex)) {
+      if (game.phase === "question" && game.qIndex === s.qIndex) return scoreAndReveal(s.qIndex);
+      // jumped straight to a reveal for a question never opened: open it instead
+      return goTo({ phase: "question", qIndex: s.qIndex });
+    }
+    return updateDoc(gameRef, { phase: s.phase, qIndex: s.qIndex, updatedAt: serverTimestamp() });
+  }
+
+  $("next").onclick = () => run(() => goTo(nextStep(game.phase, game.qIndex)));
+  $("back").onclick = () => run(() => goTo(safePrev()));
+
+  // ── Scoring ──────────────────────────────────────────
+  // Runs once per question, in the same write that flips the screen and
+  // phones to the reveal, so everyone sees their points at the same moment.
+  async function scoreAndReveal(i) {
+    if (isScored(i)) return;
+    const Q = QUESTIONS[i];
+    const opened = game.openedAt.toMillis();
+    const limit = game.timeLimit || timeLimitFor(i);
+    const snap = await getDocs(query(answersCol, where("q", "==", i)));
+    const byUid = new Map(snap.docs.map((d) => [d.data().uid, { ref: d.ref, ...d.data() }]));
+
+    // answer spread for the screen and phones (bell curve on the confidence question)
+    const dist = Q.choices.map((_, k) => [...byUid.values()].filter((a) => (a.picks || []).includes(k)).length);
+    const n = dist.reduce((s, x) => s + x, 0);
+    const avg = Q.scale && n ? dist.reduce((s, x, k) => s + x * (k + 1), 0) / n : null;
+
+    if (Q.unscored) {
+      return updateDoc(gameRef, { phase: "reveal", qIndex: i, scored: arrayUnion(i), dist, avg, updatedAt: serverTimestamp() });
+    }
+
+    // each player's confidence for this video, if wagers are on
+    const conf = new Map();
+    if (GAME.confidenceWager && Q.confIndex >= 0) {
+      const c = await getDocs(query(answersCol, where("q", "==", Q.confIndex)));
+      c.docs.forEach((d) => conf.set(d.data().uid, (d.data().picks || [])[0] + 1));
+    }
+
+    const next = players.map((p) => {
+      const a = byUid.get(p.id);
+      const g = grade(Q, a ? a.picks : []);
+      const elapsed = a && a.at ? a.at.toMillis() - opened : limit * 1000;
+      const pts = a ? pointsFor({ frac: g.frac, exact: g.exact, elapsedMs: elapsed, limitSec: limit, streakBefore: p.streak || 0, conf: conf.get(p.id) }) : 0;
+      if (a) a.result = { correct: g.exact, frac: g.frac, points: pts };
+      return {
+        id: p.id, name: p.name, team: p.team,
+        score: Math.max(0, (p.score || 0) + pts),
+        correct: (p.correct || 0) + (g.exact ? 1 : 0),
+        answered: (p.answered || 0) + (a ? 1 : 0),
+        streak: g.exact ? (p.streak || 0) + 1 : 0
+      };
+    });
+    rankPlayers(next);
+    const teams = teamStandings(next).map(({ id, name, players, total, avg, rank, value }) => ({ id, name, players, total, avg, rank, value }));
+
+    const ops = [];
+    byUid.forEach((a) => { if (a.result) ops.push((b) => b.update(a.ref, a.result)); });
+    next.forEach((p) => ops.push((b) => b.update(doc(playersCol, p.id), {
+      score: p.score, correct: p.correct, answered: p.answered, streak: p.streak, rank: p.rank
+    })));
+    // the game update goes last so phones already have their points when the reveal lands
+    ops.push((b) => b.update(gameRef, { phase: "reveal", qIndex: i, scored: arrayUnion(i), teams, dist, avg, updatedAt: serverTimestamp() }));
+    for (let k = 0; k < ops.length; k += 450) {
+      const b = writeBatch(db);
+      ops.slice(k, k + 450).forEach((op) => op(b));
+      await b.commit();
+    }
+  }
+
+  // ── Redo one question ────────────────────────────────
+  // Takes back the points it gave, clears its answers and reopens it.
+  $("redoQ").onclick = () => {
+    const i = game.qIndex;
+    if (!confirm(`Redo "${QUESTIONS[i].q}" (${qShort(i)})? Its answers are cleared${isScored(i) && !QUESTIONS[i].unscored ? " and the points it gave are taken back" : ""}, then it reopens with a fresh timer.`)) return;
+    run(async () => {
+      const snap = await getDocs(query(answersCol, where("q", "==", i)));
+      const ops = [];
+      snap.docs.forEach((d) => {
+        const a = d.data();
+        if (isScored(i) && !QUESTIONS[i].unscored && players.some((p) => p.id === a.uid)) {
+          ops.push((b) => b.update(doc(playersCol, a.uid), {
+            score: increment(-(a.points || 0)), correct: increment(a.correct ? -1 : 0), answered: increment(-1)
+          }));
+        }
+        ops.push((b) => b.delete(d.ref));
+      });
+      for (let k = 0; k < ops.length; k += 450) { const b = writeBatch(db); ops.slice(k, k + 450).forEach((op) => op(b)); await b.commit(); }
+      await updateDoc(gameRef, { scored: arrayRemove(i), dist: null, avg: null, updatedAt: serverTimestamp() });
+      game.scored = (game.scored || []).filter((x) => x !== i);
+      await updateDoc(gameRef, { phase: "question", qIndex: i, openedAt: serverTimestamp(), timeLimit: timeLimitFor(i), updatedAt: serverTimestamp() });
+      // refresh team standings after points were taken back
+      const fresh = await getDocs(playersCol);
+      const ps = fresh.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const teams = teamStandings(ps).map(({ id, name, players, total, avg, rank, value }) => ({ id, name, players, total, avg, rank, value }));
+      await updateDoc(gameRef, { teams });
+      toast("Question reopened.");
+    });
+  };
+
+  // ── Clicker / keyboard ──────────────────────────────
+  // Same keys as the AI Control Room: most clickers send PageDown/PageUp.
+  const NAV_NEXT = ["ArrowRight", "PageDown", " ", "Spacebar"], NAV_PREV = ["ArrowLeft", "PageUp"];
+  let lastNav = 0;
+  addEventListener("keydown", (e) => {
+    if (!game || $("console").hidden) return;
+    const a = document.activeElement, tag = a && a.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const dir = NAV_NEXT.includes(e.key) ? 1 : NAV_PREV.includes(e.key) ? -1 : 0;
+    if (!dir) return;
+    e.preventDefault();
+    if (e.repeat || Date.now() - lastNav < 400) return;
+    lastNav = Date.now();
+    if (a && a.blur && tag === "BUTTON") a.blur();
+    (dir > 0 ? $("next") : $("back")).click();
+  });
+
+  // ── Resets ───────────────────────────────────────────
+  async function commitInChunks(refs, apply) {
+    for (let k = 0; k < refs.length; k += 450) {
+      const b = writeBatch(db);
+      refs.slice(k, k + 450).forEach((r) => apply(b, r));
+      await b.commit();
+    }
+  }
+  $("resetScores").onclick = () => {
+    if (!confirm("Zero every score and clear all answers? Players stay joined. Good for after a rehearsal.")) return;
+    run(async () => {
+      const a = await getDocs(answersCol);
+      await commitInChunks(a.docs.map((d) => d.ref), (b, r) => b.delete(r));
+      await commitInChunks(players.map((p) => doc(playersCol, p.id)), (b, r) => b.update(r, { score: 0, correct: 0, answered: 0, streak: 0, rank: null }));
+      await setDoc(gameRef, freshGame());
+      toast("Scores reset. Back in the lobby.");
+    });
+  };
+  $("resetAll").onclick = () => {
+    if (prompt('This removes every player, answer and score. Type RESET to confirm.') !== "RESET") return;
+    run(async () => {
+      const a = await getDocs(answersCol);
+      await commitInChunks(a.docs.map((d) => d.ref), (b, r) => b.delete(r));
+      const p = await getDocs(playersCol);
+      await commitInChunks(p.docs.map((d) => d.ref), (b, r) => b.delete(r));
+      await setDoc(gameRef, freshGame());
+      toast("Game reset.");
+    });
+  };
+
+  // ── Render ───────────────────────────────────────────
+  function render() {
+    if (!game) return;
+    const { phase, qIndex } = game;
+    const label = phase === "lobby" ? "Lobby" : phase === "final" ? "Final results" :
+      `${qShort(qIndex)} · ${{ video: "Video", question: "Answering", reveal: "Reveal", leaderboard: "Standings" }[phase]}`;
+    $("phase").textContent = label;
+    $("phaseMeta").textContent = phase === "lobby" ? "Players are joining" :
+      phase === "video" ? "Video is playing on the screen — open the question when it ends" :
+      phase === "question" ? `Phones are live · ${QUESTIONS[qIndex].q}` : phase === "final" ? "Game over" : qLabel(qIndex);
+    $("kPlayers").textContent = players.length;
+    $("kAnswers").textContent = ["question", "reveal"].includes(phase) ? `${answers.length}` : "–";
+
+    const n = nextStep(phase, qIndex);
+    $("next").textContent = n ? (phase === "lobby" ? "Start game →" : `${describeStep(n)} →`) : "Game over";
+    $("next").disabled = busy || !n;
+    $("back").disabled = busy || !safePrev();
+
+    $("redoQ").hidden = ["lobby", "final", "leaderboard"].includes(phase);
+    renderTimer();
+    renderCues();
+    renderPreview();
+    renderQList();
+    renderBoards();
+  }
+
+  function renderTimer() {
+    clearInterval(tick); tick = null;
+    const t = $("timer");
+    if (game.phase !== "question") { t.hidden = true; return; }
+    t.hidden = false;
+    const upd = () => {
+      const r = remainingMs(game);
+      t.textContent = Math.ceil(r / 1000) + "s";
+      t.classList.toggle("low", r <= 5000);
+      const everyone = players.length > 0 && answers.length >= players.length;
+      if (GAME.autoReveal && !busy && (r <= 0 || everyone) && !autoTimer) {
+        const q = game.qIndex;
+        autoTimer = setTimeout(() => {
+          autoTimer = null;
+          if (game.phase === "question" && game.qIndex === q) run(() => goTo({ phase: "reveal", qIndex: q }));
+        }, r <= 0 ? 700 : 1500);
+      }
+      if (r <= 0) { clearInterval(tick); tick = null; }
+    };
+    upd(); tick = setInterval(upd, 250);
+  }
+
+  function renderCues() {
+    const box = $("cues"); box.replaceChildren();
+    if (["lobby", "final", "leaderboard"].includes(game.phase)) { box.hidden = true; return; }
+    const Q = QUESTIONS[game.qIndex];
+    const cue = game.phase === "video" ? Q.videoNotes : Q.notes;
+    box.hidden = !cue;
+    if (!cue) return;
+    ["say", "ask", "reveal", "land"].forEach((k) => {
+      if (!cue[k]) return;
+      const c = el("div", `cue ${k}`); c.append(el("b", null, k.toUpperCase()), el("span", null, cue[k]));
+      box.append(c);
+    });
+  }
+
+  function renderPreview() {
+    const box = $("qprev");
+    if (["lobby", "final"].includes(game.phase)) { box.hidden = true; return; }
+    box.hidden = false;
+    const i = game.qIndex, Q = QUESTIONS[i];
+    const counts = Q.choices.map((_, k) => answers.filter((a) => (a.picks || []).includes(k)).length);
+    const total = Math.max(1, answers.length);
+    box.replaceChildren();
+    const tags = el("div");
+    tags.append(el("span", "tag", `${timeLimitFor(i)}s`));
+    if (Q.multi) tags.append(el("span", "tag", "Pick all that apply"));
+    if (Q.scale) tags.append(el("span", "tag", "Confidence poll · not scored"));
+    if (Q.video) tags.append(el("span", "tag", Q.video.youtube ? "YouTube video" : "Video"));
+    box.append(tags, el("p", "qt", Q.q));
+    Q.choices.forEach((c, k) => {
+      const r = el("div", `opt${Q.answer.includes(k) ? " right" : ""}`); r.style.setProperty("--c", c.color);
+      if (Q.scale) c = { ...c, emoji: c.label, label: k === 0 ? Q.low : k === Q.choices.length - 1 ? Q.high : "" };
+      const f = el("div", "fill"); f.style.width = `${(counts[k] / total) * 100}%`;
+      r.append(f, el("span", "lt", choiceMark(c, k)), el("span", null, c.label), el("span", "n", String(counts[k])));
+      box.append(r);
+    });
+  }
+
+  function renderQList() {
+    const list = $("qlist"); list.replaceChildren();
+    QUESTIONS.forEach((Q, i) => {
+      const b = el("button", `qrow${i === game.qIndex && game.phase !== "lobby" ? " cur" : ""}${Q.step === 0 && i ? " round-start" : ""}`);
+      b.type = "button";
+      b.append(el("span", "num", i + 1), el("span", "txt", `${Q.video ? "📺 " : ""}${Q.roundTitle} · ${Q.q}`), el("span", "st", isScored(i) ? "✓ done" : ""));
+      b.onclick = () => {
+        if (busy) return;
+        const target = isScored(i) ? { phase: "reveal", qIndex: i } : { phase: stepsFor(i)[0], qIndex: i };
+        if (game.phase === "question" && !confirm("A question is open right now. Jump anyway? Its answers won't be scored.")) return;
+        run(() => goTo(target));
+      };
+      list.append(b);
+    });
+  }
+
+  function renderBoards() {
+    const teams = teamStandings(players);
+    const tb = $("teamBoard"); tb.replaceChildren();
+    teams.forEach((t) => {
+      const r = el("div", "brow");
+      const d = el("span", "team-dot"); d.style.background = t.color;
+      r.append(el("span", "rk", `#${t.rank}`), d, el("span", null, `${t.name} (${t.players})`), el("span", "sc", `${fmt(t.value)} ${teamValueLabel()}`));
+      tb.append(r);
+    });
+    const f = $("filter").value.trim().toLowerCase();
+    const ro = $("roster"); ro.replaceChildren();
+    const answered = new Set(answers.map((a) => a.uid));
+    [...players].sort((a, b) => a.name.localeCompare(b.name)).filter((p) => !f || p.name.toLowerCase().includes(f)).forEach((p) => {
+      const r = el("div", "prow");
+      const d = el("span", "team-dot"); d.style.background = teamById(p.team).color;
+      const x = el("button", "x", "✕"); x.title = `Remove ${p.name}`;
+      x.onclick = () => { if (confirm(`Remove ${p.name}? They can rejoin from their phone.`)) run(() => deleteDoc(doc(playersCol, p.id))); };
+      r.append(d, el("span", null, p.name), el("span", "muted", game.phase === "question" ? (answered.has(p.id) ? "✓" : "…") : fmt(p.score)), x);
+      ro.append(r);
+    });
+  }
+  $("filter").oninput = () => renderBoards();
+</script>
+</body>
+</html>
