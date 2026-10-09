@@ -231,6 +231,12 @@ export function enableAdminShortcut() {
     if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT") { typed = ""; return; }
     if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
     typed = (typed + e.key.toLowerCase()).slice(-code.length);
-    if (typed === code) location.href = "admin.html" + (location.search.includes("emulator=1") ? "?emulator=1" : "");
+    if (typed === code) {
+      typed = "";
+      const url = "admin.html" + (location.search.includes("emulator=1") ? "?emulator=1" : "");
+      // new tab, so the screen keeps running; same tab only if a popup blocker stops it
+      const w = window.open(url, "_blank");
+      if (!w) location.href = url;
+    }
   });
 }
