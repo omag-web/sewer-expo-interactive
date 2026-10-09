@@ -87,6 +87,21 @@
   .keys { color: var(--steel); font-size: 13px; margin: 8px 0 0; }
   .qrow.round-start { margin-top: 8px; }
   #adminBadge { color: var(--accent); border: 1px solid var(--accent); background: transparent; letter-spacing: .1em; font-size: 13px; }
+  /* In-page dialog (replaces the browser's confirm/prompt boxes) */
+  .modal-back { position: fixed; inset: 0; z-index: 100; background: rgba(10,9,8,.72); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fade .15s ease; }
+  .modal { width: 100%; max-width: 460px; background: var(--panel); border: 1px solid var(--edge); border-top: 4px solid var(--accent); border-radius: 12px; padding: 22px 22px 18px; box-shadow: 0 24px 60px rgba(0,0,0,.55); animation: pop .18s ease; }
+  .modal.danger { border-top-color: var(--bad); }
+  .modal .m-icon { font-size: 26px; line-height: 1; margin-bottom: 10px; }
+  .modal h4 { font-family: var(--cond); font-size: 28px; line-height: 1.05; margin: 0 0 8px; }
+  .modal p { color: var(--muted); font-size: 16px; line-height: 1.45; margin: 0; }
+  .modal p b { color: var(--text); }
+  .modal .m-field { margin-top: 14px; }
+  .modal .m-field label { display: block; font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .modal .m-field input { font-size: 18px; padding: 10px 12px; letter-spacing: .08em; }
+  .modal .m-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .modal .m-actions .btn { min-height: 44px; font-size: 18px; padding: 8px 18px; }
+  .modal .btn.solid-danger { background: var(--bad); color: #fff; }
+  @keyframes fade { from { opacity: 0; } }
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--panel2); border: 1px solid var(--edge); padding: 10px 18px; border-radius: 8px; font-weight: 600; z-index: 10; }
 </style>
 </head>
@@ -244,6 +259,47 @@
   $("createGame").onclick = () => run(() => setDoc(gameRef, freshGame()));
   const freshGame = () => ({ phase: "lobby", qIndex: 0, scored: [], teams: [], openedAt: null, timeLimit: GAME.defaultTimeLimit, updatedAt: serverTimestamp() });
 
+  // Styled confirm dialog. Resolves true (confirm) or false (cancel / Esc / click outside).
+  // requireText: the confirm button stays off until that exact word is typed.
+  function ask({ title, message, confirmText = "Confirm", cancelText = "Cancel", danger = false, icon = "", requireText = "" }) {
+    return new Promise((resolve) => {
+      const back = el("div", "modal-back");
+      const m = el("div", danger ? "modal danger" : "modal");
+      m.setAttribute("role", "alertdialog"); m.setAttribute("aria-modal", "true");
+      if (icon) m.append(el("div", "m-icon", icon));
+      const h = el("h4", null, title); h.id = "mTitle"; m.setAttribute("aria-labelledby", "mTitle");
+      const p = el("p"); p.innerHTML = message;
+      m.append(h, p);
+      let input = null;
+      if (requireText) {
+        const f = el("div", "m-field");
+        const l = el("label", null, `Type ${requireText} to confirm`); l.htmlFor = "mInput";
+        input = el("input"); input.type = "text"; input.id = "mInput"; input.autocomplete = "off"; input.spellcheck = false;
+        f.append(l, input); m.append(f);
+      }
+      const acts = el("div", "m-actions");
+      const no = el("button", "btn ghost", cancelText); no.type = "button";
+      const yes = el("button", danger ? "btn solid-danger" : "btn", confirmText); yes.type = "button";
+      acts.append(no, yes); m.append(acts); back.append(m);
+      const sync = () => { if (input) yes.disabled = input.value.trim().toUpperCase() !== requireText.toUpperCase(); };
+      const done = (v) => { removeEventListener("keydown", onKey, true); back.remove(); resolve(v); };
+      const onKey = (e) => {
+        if (e.key === "Escape") { e.preventDefault(); done(false); }
+        else if (e.key === "Enter" && !yes.disabled) { e.preventDefault(); done(true); }
+        e.stopPropagation(); // keep clicker / arrow keys from moving the game while this is open
+      };
+      no.onclick = () => done(false);
+      yes.onclick = () => { if (!yes.disabled) done(true); };
+      back.onclick = (e) => { if (e.target === back) done(false); };
+      if (input) input.oninput = sync;
+      sync();
+      addEventListener("keydown", onKey, true);
+      document.body.append(back);
+      (input || no).focus();
+    });
+  }
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
   async function run(fn) {
     if (busy) return;
     busy = true; render();
@@ -376,9 +432,14 @@
 
   // ── Redo one question ────────────────────────────────
   // Takes back the points it gave, clears its answers and reopens it.
-  $("redoQ").onclick = () => {
+  $("redoQ").onclick = async () => {
     const i = game.qIndex;
-    if (!confirm(`Redo "${QUESTIONS[i].q}" (${qShort(i)})? Its answers are cleared${isScored(i) && !QUESTIONS[i].unscored ? " and the points it gave are taken back" : ""}, then it reopens with a fresh timer.`)) return;
+    const ok = await ask({
+      icon: "↺", title: "Redo this question?",
+      message: `<b>${esc(qShort(i))} · ${esc(QUESTIONS[i].q)}</b><br>All of its answers are cleared${isScored(i) && !QUESTIONS[i].unscored ? " and the points it gave are taken back" : ""}. It then reopens with a fresh timer.`,
+      confirmText: "Redo question"
+    });
+    if (!ok) return;
     run(async () => {
       const snap = await getDocs(query(answersCol, where("q", "==", i)));
       const ops = [];
@@ -409,7 +470,7 @@
   const NAV_NEXT = ["ArrowRight", "PageDown", " ", "Spacebar"], NAV_PREV = ["ArrowLeft", "PageUp"];
   let lastNav = 0;
   addEventListener("keydown", (e) => {
-    if (!game || $("console").hidden) return;
+    if (!game || $("console").hidden || document.querySelector(".modal-back")) return;
     const a = document.activeElement, tag = a && a.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
     if (e.altKey || e.ctrlKey || e.metaKey) return;
@@ -434,8 +495,13 @@
     const sg = await getDocs(collection(db, "games", GAME.id, "signals"));
     await commitInChunks(sg.docs.map((d) => d.ref), (b, r) => b.delete(r));
   }
-  $("resetScores").onclick = () => {
-    if (!confirm("Zero every score and clear all answers? Players stay joined. Good for after a rehearsal.")) return;
+  $("resetScores").onclick = async () => {
+    const ok = await ask({
+      icon: "🧹", title: "Reset scores?",
+      message: "Every answer is cleared and every score goes back to zero. <b>Players stay joined.</b> The game returns to the lobby. Good for after a rehearsal.",
+      confirmText: "Reset scores"
+    });
+    if (!ok) return;
     run(async () => {
       const a = await getDocs(answersCol);
       await commitInChunks(a.docs.map((d) => d.ref), (b, r) => b.delete(r));
@@ -445,8 +511,13 @@
       toast("Scores reset. Back in the lobby.");
     });
   };
-  $("resetAll").onclick = () => {
-    if (prompt('This removes every player, answer and score. Type RESET to confirm.') !== "RESET") return;
+  $("resetAll").onclick = async () => {
+    const ok = await ask({
+      icon: "⚠️", title: "Reset the whole game?", danger: true,
+      message: "This removes <b>every player, answer and score</b>. Everyone will need to join again. This can't be undone.",
+      confirmText: "Reset game", requireText: "RESET"
+    });
+    if (!ok) return;
     run(async () => {
       const a = await getDocs(answersCol);
       await commitInChunks(a.docs.map((d) => d.ref), (b, r) => b.delete(r));
@@ -534,10 +605,14 @@
       const b = el("button", `qrow${i === game.qIndex && game.phase !== "lobby" ? " cur" : ""}${Q.step === 0 && i ? " round-start" : ""}`);
       b.type = "button";
       b.append(el("span", "num", i + 1), el("span", "txt", `${Q.video ? "📺 " : ""}${Q.roundTitle} · ${Q.q}`), el("span", "st", isScored(i) ? "✓ done" : ""));
-      b.onclick = () => {
+      b.onclick = async () => {
         if (busy) return;
         const target = isScored(i) ? { phase: "reveal", qIndex: i } : { phase: stepsFor(i)[0], qIndex: i };
-        if (game.phase === "question" && !confirm("A question is open right now. Jump anyway? Its answers won't be scored.")) return;
+        if (game.phase === "question" && !(await ask({
+          icon: "⏭", title: "Jump while voting is open?",
+          message: `<b>${esc(qShort(game.qIndex))}</b> is still open. If you jump now, its answers won't be scored.`,
+          confirmText: "Jump anyway"
+        }))) return;
         run(() => goTo(target));
       };
       list.append(b);
