@@ -26,6 +26,7 @@
   #fsBtn:hover, #fsBtn:focus-visible { opacity: 1; color: var(--text); }
   #fsBtn svg { width: 55%; height: 55%; }
   body.preview #fsBtn { display: none; }
+  .qfoot { padding-right: 3.6vw; }   /* keep footer text clear of the corner button */
   .stage { position: fixed; inset: 0; display: flex; flex-direction: column; }
   .top {
     display: flex; align-items: center; gap: 2vw; padding: 2vh 3vw;
@@ -86,7 +87,10 @@
     font-size: 4.2vh; font-weight: 600; line-height: 1.15;
     transition: opacity .4s, transform .4s;
   }
-  .ch .lt { font-family: var(--cond); font-weight: 700; font-size: 7vh; color: var(--c); flex: none; width: 1.2ch; position: relative; }
+  .ch .lt { font-family: var(--cond); font-weight: 700; font-size: 7vh; color: var(--c); flex: none; min-width: 1.2ch; text-align: center; position: relative; }
+  /* emoji markers (decision key) render wider than a letter on some systems */
+  .ch .lt.emo { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: 5vh; line-height: 1; min-width: 0; width: 1.25em; }
+  .vmark.emo { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: 3.4vh; }
   .ch .tx { position: relative; flex: 1; }
   .ch .tx small { display: block; font-size: 2.6vh; font-weight: 500; color: var(--muted); margin-top: .4vh; }
   .grid4.many { gap: 1.4vh 1.4vw; margin-top: 2.6vh; }
@@ -118,14 +122,17 @@
   .scale-q .ch .tx, .scale-q .ch .ct, .scale-q .ch .fill { display: none; }
   .scale-q .ch .lt { font-size: 14vh; color: var(--text); width: auto; }
   .scale-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 3vh; font-weight: 600; margin-top: 1.6vh; }
-  .bell .qtext { font-size: 5vh; }
+  .bell .qtext { font-size: 5vh; flex: none; margin-bottom: 1vh; }
   .bellchart { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
   .bellchart svg { width: 100%; height: 100%; }
-  .bc-n { fill: #fff; font: 700 44px "Barlow Condensed", sans-serif; }
-  .bc-l { fill: #fff; font: 700 56px "Barlow Condensed", sans-serif; }
-  .bc-avg { fill: #d49c61; font: 700 34px "Barlow Condensed", sans-serif; }
-  .bellbar { transform-box: fill-box; transform-origin: bottom; animation: grow .7s cubic-bezier(.2,.8,.2,1) both; }
-  .bellline { stroke-dasharray: 4000; stroke-dashoffset: 4000; animation: draw 1.4s .5s ease forwards; }
+  .bc-n { fill: #b3aca4; font: 600 30px Barlow, sans-serif; }
+  .bc-l { fill: #fff; font: 700 58px "Barlow Condensed", sans-serif; }
+  .bc-end { fill: #d49c61; font: 700 30px Barlow, sans-serif; }
+  .bc-avg { fill: #d49c61; font: 700 48px "Barlow Condensed", sans-serif; }
+  .bellfill { opacity: 0; animation: fadein .9s .9s ease forwards; }
+  .bellline { stroke-dasharray: 5000; stroke-dashoffset: 5000; animation: draw 1.6s .2s ease forwards; }
+  .bellavg { opacity: 0; animation: fadein .6s 1.6s ease forwards; }
+  @keyframes fadein { to { opacity: 1; } }
   @keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   /* After each vote: vertical bar graph of how the room answered */
@@ -437,7 +444,7 @@
       const fill = el("div", "fill"), ct = el("span", "ct");
       const tx = el("span", "tx", c.label);
       if (c.meaning) tx.append(el("small", null, c.meaning));
-      d.append(fill, el("span", "lt", choiceMark(c, k)), tx, ct);
+      d.append(fill, el("span", c.emoji ? "lt emo" : "lt", choiceMark(c, k)), tx, ct);
       grid.append(d);
       return { d, fill, ct };
     });
@@ -505,7 +512,7 @@
       const val = el("div", "vval"), track = el("div", "vtrack"), bar = el("i");
       track.append(bar);
       const lab = el("div", "vlab");
-      lab.append(el("span", "vmark", choiceMark(c, k)), el("span", "vtxt", c.label));
+      lab.append(el("span", c.emoji ? "vmark emo" : "vmark", choiceMark(c, k)), el("span", "vtxt", c.label));
       col.append(val, track, lab);
       chart.append(col);
       return { val, bar };
@@ -558,40 +565,55 @@
       const total = dist.reduce((a, b) => a + b, 0);
       const mean = total ? dist.reduce((a, x, k) => a + x * (k + 1), 0) / total : 0;
       const sd = total ? Math.sqrt(dist.reduce((a, x, k) => a + x * Math.pow(k + 1 - mean, 2), 0) / total) : 0;
-      chart.innerHTML = bellSVG(dist, mean, sd, Q.choices);
+      chart.innerHTML = bellSVG(dist, mean, sd, Q.choices, Q.low, Q.high);
       left.replaceChildren(el("b", null, total ? mean.toFixed(1) : "–"), document.createTextNode(" average confidence · "), el("b", null, String(total)), document.createTextNode(total === 1 ? " response" : " responses"));
       right.textContent = !total ? "" : sd < 0.8 ? "The room mostly agrees" : sd < 1.2 ? "Some spread in the room" : "The room is split";
     });
     return v;
   }
 
-  // Bars for each rating with a smooth normal curve fitted over them.
-  function bellSVG(dist, mean, sd, choices) {
-    const W = 1600, H = 560, padL = 40, padR = 40, padT = 40, padB = 90;
-    const n = dist.length, cw = (W - padL - padR) / n, max = Math.max(1, ...dist);
-    const total = dist.reduce((a, b) => a + b, 0);
-    const yOf = (c) => padT + (H - padT - padB) * (1 - c / max);
-    let out = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Confidence distribution">`;
+  // Smooth bell curve across the 1–5 scale, fitted to the room's answers
+  // (centered on the average, widened by how spread out the answers are),
+  // with the room average marked on the curve.
+  function bellSVG(dist, mean, sd, choices, low, high) {
+    const W = 1600, H = 700, padL = 90, padR = 90, padT = 90, padB = 175;
+    const n = dist.length, total = dist.reduce((a, b) => a + b, 0);
+    const lo = 0.5, hi = n + 0.5;                     // a little tail past 1 and 5
+    const X = (v) => padL + ((v - lo) / (hi - lo)) * (W - padL - padR);
+    const base = H - padB, plotH = base - padT;
+    const s = Math.max(sd, 0.55);                      // keep a curve even if everyone agrees
+    const g = (v) => Math.exp(-0.5 * Math.pow((v - mean) / s, 2));
+    const Y = (v) => base - g(v) * plotH;
+
+    let out = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Room confidence bell curve, average ${total ? mean.toFixed(1) : "none"} of ${n}">`;
+    out += `<defs><linearGradient id="bellFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d49c61" stop-opacity=".75"/><stop offset="1" stop-color="#d49c61" stop-opacity=".08"/></linearGradient></defs>`;
+
+    // scale: baseline, tick for each rating, vote counts under each
+    out += `<line x1="${padL}" x2="${W - padR}" y1="${base}" y2="${base}" stroke="rgba(255,255,255,.35)" stroke-width="3"/>`;
     dist.forEach((c, k) => {
-      const x = padL + k * cw + cw * 0.14, w = cw * 0.72, y = yOf(c), col = choices[k].color;
-      out += `<rect x="${x}" y="${y}" width="${w}" height="${H - padB - y}" rx="10" fill="${col}" opacity=".85" class="bellbar" style="animation-delay:${k * 90}ms"/>`;
-      out += `<text x="${x + w / 2}" y="${y - 14}" text-anchor="middle" class="bc-n">${c}</text>`;
-      out += `<text x="${x + w / 2}" y="${H - padB + 62}" text-anchor="middle" class="bc-l">${k + 1}</text>`;
+      const x = X(k + 1);
+      out += `<line x1="${x}" x2="${x}" y1="${padT}" y2="${base}" stroke="rgba(255,255,255,.08)" stroke-width="2"/>`;
+      out += `<line x1="${x}" x2="${x}" y1="${base}" y2="${base + 14}" stroke="rgba(255,255,255,.5)" stroke-width="3"/>`;
+      out += `<text x="${x}" y="${base + 66}" text-anchor="middle" class="bc-l">${k + 1}</text>`;
+      out += `<text x="${x}" y="${base + 104}" text-anchor="middle" class="bc-n">${c} ${c === 1 ? "vote" : "votes"}</text>`;
     });
-    if (total > 1) {
-      const s = Math.max(sd, 0.45);
-      const pts = [];
-      for (let t = 0; t <= 120; t++) {
-        const xv = 0.5 + (n * t) / 120; // rating axis from 0.5 to n+0.5
-        const dens = Math.exp(-0.5 * Math.pow((xv - mean) / s, 2)) / (s * Math.sqrt(2 * Math.PI));
-        const c = dens * total; // expected count per rating
-        pts.push(`${padL + (xv - 0.5) * cw},${yOf(Math.min(c, max * 1.08))}`);
-      }
-      out += `<polyline points="${pts.join(" ")}" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" class="bellline"/>`;
-      const mx = padL + (mean - 0.5) * cw;
-      out += `<line x1="${mx}" x2="${mx}" y1="${padT - 10}" y2="${H - padB}" stroke="#d49c61" stroke-width="4" stroke-dasharray="12 10"/>`;
-      out += `<text x="${mx}" y="${padT - 18}" text-anchor="middle" class="bc-avg">avg ${mean.toFixed(1)}</text>`;
-    }
+    if (low) out += `<text x="${X(1)}" y="${base + 152}" text-anchor="middle" class="bc-end">${low}</text>`;
+    if (high) out += `<text x="${X(n)}" y="${base + 152}" text-anchor="middle" class="bc-end">${high}</text>`;
+
+    if (!total) return out + `<text x="${W / 2}" y="${base - plotH / 2}" text-anchor="middle" class="bc-n">No responses</text></svg>`;
+
+    // the curve
+    const pts = [];
+    for (let t = 0; t <= 160; t++) { const v = lo + ((hi - lo) * t) / 160; pts.push([X(v), Y(v)]); }
+    const line = pts.map((p, k) => `${k ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+    out += `<path d="${line} L${X(hi)},${base} L${X(lo)},${base} Z" fill="url(#bellFill)" class="bellfill"/>`;
+    out += `<path d="${line}" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" class="bellline"/>`;
+
+    // room average: line from the scale up to the curve, dot on the curve, label above
+    const mx = X(mean), my = Y(mean);
+    out += `<line x1="${mx}" x2="${mx}" y1="${base}" y2="${my}" stroke="#d49c61" stroke-width="5" stroke-dasharray="14 10" class="bellavg"/>`;
+    out += `<circle cx="${mx}" cy="${my}" r="17" fill="#d49c61" stroke="#181716" stroke-width="6" class="bellavg"/>`;
+    out += `<text x="${mx}" y="${my - 34}" text-anchor="middle" class="bc-avg bellavg">Room average ${mean.toFixed(1)}</text>`;
     return out + "</svg>";
   }
 

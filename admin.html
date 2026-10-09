@@ -52,6 +52,7 @@
   .opt .fill { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--c) 28%, transparent); width: 0; transition: width .4s ease; }
   .opt > *:not(.fill) { position: relative; }
   .opt .lt { font-family: var(--cond); font-weight: 700; font-size: 22px; color: var(--c); }
+  .opt .lt.emo { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: 17px; line-height: 1; }
   .opt .n { text-align: right; font-weight: 700; }
   .opt.right { outline: 2px solid var(--good); }
   .opt.right .lt::after { content: " ✓"; color: var(--good); }
@@ -504,7 +505,7 @@
       const r = el("div", `opt${Q.answer.includes(k) ? " right" : ""}`); r.style.setProperty("--c", c.color);
       if (Q.scale) c = { ...c, emoji: c.label, label: k === 0 ? Q.low : k === Q.choices.length - 1 ? Q.high : "" };
       const f = el("div", "fill"); f.style.width = `${(counts[k] / total) * 100}%`;
-      r.append(f, el("span", "lt", choiceMark(c, k)), el("span", null, c.label), el("span", "n", String(counts[k])));
+      r.append(f, el("span", c.emoji ? "lt emo" : "lt", choiceMark(c, k)), el("span", null, c.label), el("span", "n", String(counts[k])));
       box.append(r);
     });
   }

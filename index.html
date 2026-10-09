@@ -94,7 +94,8 @@
     background: var(--panel); border: 2px solid var(--edge); border-left: 10px solid var(--c);
     text-align: left; font-size: 18px; font-weight: 600; line-height: 1.2;
   }
-  .choice .lt { font-family: var(--cond); font-weight: 700; font-size: 24px; color: var(--c); width: 1.3em; flex: none; text-align: center; }
+  .choice .lt { font-family: var(--cond); font-weight: 700; font-size: 24px; color: var(--c); min-width: 1.3em; flex: none; text-align: center; }
+  .choice .lt.emo { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: 21px; line-height: 1; width: 1.4em; min-width: 0; }
   .choice .txt { flex: 1; min-width: 0; }
   .choice .txt small { display: block; font-size: 14px; font-weight: 500; color: var(--muted); margin-top: 2px; }
   .choice .box { width: 26px; height: 26px; border-radius: 5px; border: 2px solid var(--edge); flex: none; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; }
@@ -353,7 +354,7 @@
   function choiceBody(c, k) {
     const t = el("span", "txt", c.label);
     if (c.meaning) t.append(el("small", null, c.meaning));
-    return [el("span", "lt", choiceMark(c, k)), t];
+    return [el("span", c.emoji ? "lt emo" : "lt", choiceMark(c, k)), t];
   }
 
   function viewQuestion(i) {
