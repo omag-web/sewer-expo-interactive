@@ -74,7 +74,11 @@ export const GAME = {
 
   // Type this on the screen or the player page (on a keyboard, not in a text box)
   // to jump to the admin console — same idea as the AI Control Room's code word.
-  adminCode: "admin"
+  adminCode: "admin",
+
+  // false = the admin page opens straight in, no password (firestore.rules must
+  // match: isGameHost() returns request.auth != null). true = moderator login.
+  adminLogin: false
 };
 
 // Players pick one of these when they join. Change TEAM_COUNT to add or

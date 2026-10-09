@@ -237,7 +237,7 @@
 </main>
 
 <script type="module">
-  import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { signInWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import {
     onSnapshot, setDoc, updateDoc, deleteDoc, getDocs, query, where, doc, writeBatch,
     serverTimestamp, arrayUnion, arrayRemove, increment, collection
@@ -269,7 +269,9 @@
   // ── Auth ─────────────────────────────────────────────
   onAuthStateChanged(auth, (u) => {
     unsubs.forEach((f) => f()); unsubs = [];
-    const isHost = u && !u.isAnonymous;
+    // No-password mode: sign in quietly in the background and go straight in
+    if (GAME.adminLogin === false && !u) { signInAnonymously(auth).catch(fail); return; }
+    const isHost = GAME.adminLogin === false ? !!u : (u && !u.isAnonymous);
     $("signin").hidden = !!isHost;
     $("tools").hidden = !isHost;
     $("adminBadge").hidden = !isHost;
@@ -293,6 +295,7 @@
     catch (x) { console.error(x); $("signErr").textContent = /unauthorized-domain/.test(x.code) ? explainError(x).msg : `Sign-in failed. Check the email and password. (${x.code || "error"})`; }
   };
   $("signOut").onclick = () => signOut(auth);
+  if (GAME.adminLogin === false) $("signOut").remove();
 
   function fail(e) {
     console.error(e);

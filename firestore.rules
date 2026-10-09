@@ -46,9 +46,12 @@ service cloud.firestore {
     }
 
     // ── What Lies Beneath game ─────────────────────────────────
-    // Players sign in anonymously; the admin page uses a moderator login above.
+    // The admin page opens without a password (adminLogin: false in config.js),
+    // so anyone signed in can run the game. The Expo Wall above stays
+    // moderator-only. To lock the game again: set adminLogin: true and change
+    // the line below to   return isMod();
     function isGameHost() {
-      return isMod();
+      return request.auth != null;
     }
 
     function validName(n) {
