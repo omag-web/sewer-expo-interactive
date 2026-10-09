@@ -109,7 +109,7 @@ export const ROUND_QUESTIONS = [
     id: "seen",
     q: "What did you see?",
     multi: true,
-    choices: ["Roots", "Offset(s)", "Crack", "Infiltration", "Collapse", "Protruding taps", "Grease"]
+    choices: ["Roots", "Offset(s)", "Crack", "Protruding taps", "Grease"]
   },
   {
     id: "serious",
@@ -153,7 +153,7 @@ export const ROUNDS = [
     title: "Video 2",
     video: { src: "video/sample.mp4" },
     answers: {
-      seen: ["Offset(s)", "Infiltration"],
+      seen: ["Offset(s)", "Protruding taps"],
       serious: "Fix it",
       action: "Point repair"
     }
