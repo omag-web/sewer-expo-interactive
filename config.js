@@ -155,7 +155,7 @@ export const ROUNDS = [
   {
     title: "Bartlesville 2A",
     video: { src: "video/Bartlesville 2A - Edit - Final.mp4" },
-    answers: { seen: ["Offset(s)"], serious: ["Fix it"] }
+    answers: { seen: ["Offset(s)", "Flow"], serious: ["Fix it"] }
   },
   {
     title: "Mellenson",
