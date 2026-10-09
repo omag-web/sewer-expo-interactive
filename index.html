@@ -278,7 +278,7 @@
     else if (phase === "question") swap(viewQuestion(q), key);
     else if (phase === "reveal") swap(viewReveal(q), key);
     else if (phase === "leaderboard" || phase === "standings") swap(viewStanding(false), key);
-    else if (phase === "final") swap(viewStanding(true), key);
+    else if (phase === "final" || phase === "outro") swap(viewStanding(true), key);
   }
 
   function swap(node, key) {

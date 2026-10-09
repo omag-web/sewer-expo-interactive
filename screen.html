@@ -14,6 +14,8 @@
   /* Built for a 16:9 display; everything scales with the viewport. */
   html, body { height: 100%; overflow: hidden; }
   body { font-size: 1.6vh; }
+  .soundchip { position: fixed; left: 1.2vw; bottom: 1.6vh; z-index: 40; background: rgba(24,23,22,.8); border: 1px solid var(--edge); color: var(--muted); padding: .7vh 1vw; border-radius: 99px; font-size: 1.7vh; font-weight: 600; }
+  .vready .end-logo { max-height: 12vh; max-width: 30vw; object-fit: contain; margin-bottom: 2vh; }
   .soundhint { position: absolute; left: 50%; bottom: 4vh; transform: translateX(-50%); background: rgba(0,0,0,.7); color: #fff; padding: 1vh 1.6vw; border-radius: 99px; font-size: 2.4vh; font-weight: 600; z-index: 2; }
   /* small full-screen toggle, bottom-right corner */
   #fsBtn {
@@ -232,7 +234,7 @@
   import { onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qLabel,
-    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut, fmtClock, videoSignalRef, auth
+    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut, fmtClock, videoSignalRef, auth, CLOSING_VIDEO
   } from "./game.js";
   import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -315,8 +317,8 @@
     viewKey = key;
     clearInterval(tick); tick = null;
     if (phase !== "video") stopVideo();
-    $("topRight").textContent = ["lobby", "final"].includes(phase) ? "" : qLabel(q);
-    const v = { lobby: viewLobby, video: viewVideo, question: viewQuestion, reveal: viewReveal, leaderboard: viewBoards, standings: viewBoards, final: viewFinal }[phase];
+    $("topRight").textContent = ["lobby", "final", "outro"].includes(phase) ? "" : qLabel(q);
+    const v = { lobby: viewLobby, video: viewVideo, question: viewQuestion, reveal: viewReveal, leaderboard: viewBoards, standings: viewBoards, final: viewFinal, outro: viewOutro }[phase];
     body.replaceChildren(v ? v(q) : el("div"));
     update();
   }
@@ -423,6 +425,39 @@
   }
 
   // Small note on a muted video so the presenter knows one click brings the sound back
+  // ── Closing video (after the winner) ─────────────────
+  function viewOutro() {
+    const v = view();
+    stopVideo();
+    const wrap = el("div", "vwrap"); document.body.append(wrap);
+    const endCard = () => {
+      if (wrap.querySelector(".vready")) return;
+      const r = el("div", "vready");
+      const logo = el("img"); logo.className = "end-logo"; setLogo(logo);
+      r.append(logo, el("h1", null, (CLOSING_VIDEO && CLOSING_VIDEO.endText) || "Thanks for playing!"), el("p", null, `${GAME.title} · ${GAME.eventLine1}`));
+      wrap.append(r);
+    };
+    if (!CLOSING_VIDEO) { endCard(); return v; }
+    const vid = el("video"); vid.src = encodeURI(CLOSING_VIDEO.src); vid.playsInline = true; vid.preload = "auto"; vid.muted = PREVIEW;
+    vid.onended = endCard;
+    vid.onerror = () => endCard();
+    wrap.append(vid);
+    vid.play().catch(() => {
+      vid.muted = true; vid.play().catch(() => endCard());
+      if (!PREVIEW) showSoundHint(wrap);
+    });
+    return v;
+  }
+
+  // Until someone clicks or presses a key on this page, browsers won't play
+  // video sound. A small reminder sits in the corner until that happens.
+  if (!PREVIEW && !(navigator.userActivation && navigator.userActivation.hasBeenActive)) {
+    const chip = el("div", "soundchip", "🔈 Click once on this screen to turn on video sound");
+    document.body.append(chip);
+    const off = () => { chip.remove(); removeEventListener("pointerdown", off); removeEventListener("keydown", off); };
+    addEventListener("pointerdown", off); addEventListener("keydown", off);
+  }
+
   function showSoundHint(wrap) {
     const h = el("div", "soundhint", "🔇 Click anywhere for sound");
     wrap.append(h);

@@ -2,9 +2,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, connectAuthEmulator } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, connectFirestoreEmulator, doc, collection } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, GAME, TEAMS, DECISIONS, ROUND_QUESTIONS, ROUNDS } from "./config.js";
+import { firebaseConfig, GAME, TEAMS, DECISIONS, ROUND_QUESTIONS, ROUNDS, CLOSING_VIDEO } from "./config.js";
 
-export { GAME, TEAMS, DECISIONS, ROUNDS };
+export { GAME, TEAMS, DECISIONS, ROUNDS, CLOSING_VIDEO };
 
 // ── Build the flat question list from ROUNDS × ROUND_QUESTIONS ──
 const PALETTE = ["#d49c61", "#5b9bd5", "#6cc08b", "#c77dcc", "#e0614f", "#4fc1c1", "#e8c14f", "#9aa5b1"];
@@ -13,10 +13,14 @@ const norm = (s) => String(s).trim().toLowerCase();
 const confAt = ROUND_QUESTIONS.findIndex((t) => t.scale);
 // Video numbers (1-based) that end with full-screen standings. Never the last one,
 // because the finale follows it.
+// Main rounds are the scored videos played in order; "extra" rounds are spares.
+// Standings positions count main rounds only (e.g. halftime of 4 = after the 2nd).
+const MAIN = ROUNDS.map((r, ri) => ri).filter((ri) => !ROUNDS[ri].extra);
+const LAST_MAIN = MAIN[MAIN.length - 1];
 const STANDINGS_ROUNDS = (() => {
-  const n = ROUNDS.length, v = GAME.standingsAfter ?? "middle";
+  const n = MAIN.length, v = GAME.standingsAfter ?? "middle";
   const list = Array.isArray(v) ? v : v === "middle" ? [Math.ceil(n / 2)] : [];
-  return list.filter((r) => r >= 1 && r < n);
+  return list.filter((r) => r >= 1 && r < n).map((r) => MAIN[r - 1]);   // → ROUNDS indexes
 })();
 const HALFTIME = GAME.standingsAfter === "middle" || GAME.standingsAfter == null;
 export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) => {
@@ -32,8 +36,9 @@ export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) =>
     low: t.low, high: t.high, explain: "",
     round: ri, roundTitle: r.title || `Video ${ri + 1}`, step: k, steps: ROUND_QUESTIONS.length,
     video: k === 0 ? r.video : null,
-    leaderboard: k === ROUND_QUESTIONS.length - 1 && (STANDINGS_ROUNDS.includes(ri + 1) || ri === ROUNDS.length - 1), confIndex: -1,
-    standingsTitle: ri === ROUNDS.length - 1 ? "Final standings" : HALFTIME ? "Halftime standings" : `Standings after ${r.title || `Video ${ri + 1}`}`
+    leaderboard: k === ROUND_QUESTIONS.length - 1 && (STANDINGS_ROUNDS.includes(ri) || ri === LAST_MAIN), confIndex: -1,
+    standingsTitle: ri === LAST_MAIN ? "Final standings" : HALFTIME ? "Halftime standings" : `Standings after ${r.title || `Video ${ri + 1}`}`,
+    extra: !!r.extra
   };
   const raw = r.answers ? r.answers[t.id] : undefined;
   const answer = [].concat(raw ?? []).map((a) => {
@@ -50,8 +55,9 @@ export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) =>
     explain: r.explain ? r.explain[t.id] : "",
     round: ri, roundTitle: r.title || `Video ${ri + 1}`, step: k, steps: ROUND_QUESTIONS.length,
     video: k === 0 ? r.video : null,
-    leaderboard: k === ROUND_QUESTIONS.length - 1 && (STANDINGS_ROUNDS.includes(ri + 1) || ri === ROUNDS.length - 1),
-    standingsTitle: ri === ROUNDS.length - 1 ? "Final standings" : HALFTIME ? "Halftime standings" : `Standings after ${r.title || `Video ${ri + 1}`}`,
+    leaderboard: k === ROUND_QUESTIONS.length - 1 && (STANDINGS_ROUNDS.includes(ri) || ri === LAST_MAIN),
+    standingsTitle: ri === LAST_MAIN ? "Final standings" : HALFTIME ? "Halftime standings" : `Standings after ${r.title || `Video ${ri + 1}`}`,
+    extra: !!r.extra,
     confIndex: confAt >= 0 && confAt < k ? base + confAt : -1
   };
 }));
@@ -106,27 +112,46 @@ export function stepsFor(i) {
   if (QUESTIONS[i].leaderboard) s.push("leaderboard");
   return s;
 }
+// Flow: lobby → main videos in order (extra videos skipped) → final standings
+// → winner → closing video. An extra video, if you play it, flows into the
+// final standings when it's done.
+const firstOf = (i) => ({ phase: stepsFor(i)[0], qIndex: i });
+const lastOf = (i) => { const p = stepsFor(i); return { phase: p[p.length - 1], qIndex: i }; };
+const lastMainQ = QUESTIONS.reduce((m, Q, i) => (!Q.extra ? i : m), -1);
+const firstMainQ = QUESTIONS.findIndex((Q) => !Q.extra);
 export function nextStep(phase, qIndex) {
-  if (phase === "lobby") return { phase: stepsFor(0)[0], qIndex: 0 };
-  if (phase === "final") return null;
+  if (phase === "lobby") return firstOf(firstMainQ);
+  if (phase === "final") return CLOSING_VIDEO ? { phase: "outro", qIndex } : null;
+  if (phase === "outro") return null;
   const steps = stepsFor(qIndex);
   const at = steps.indexOf(phase);
-  if (at < steps.length - 1) return { phase: steps[at + 1], qIndex };
-  if (qIndex + 1 < QUESTIONS.length) return { phase: stepsFor(qIndex + 1)[0], qIndex: qIndex + 1 };
+  if (at >= 0 && at < steps.length - 1) return { phase: steps[at + 1], qIndex };
+  const Q = QUESTIONS[qIndex];
+  const nx = QUESTIONS[qIndex + 1];
+  if (nx && nx.round === Q.round) return firstOf(qIndex + 1);           // next question, same video
+  if (Q.extra) return lastMainQ >= 0 && QUESTIONS[lastMainQ].leaderboard ? { phase: "leaderboard", qIndex: lastMainQ } : { phase: "final", qIndex };
+  const nextMain = QUESTIONS.findIndex((x, i) => i > qIndex && !x.extra);
+  if (nextMain >= 0) return firstOf(nextMain);
   return { phase: "final", qIndex };
 }
 export function prevStep(phase, qIndex) {
   if (phase === "lobby") return null;
-  if (phase === "final") { const p = stepsFor(QUESTIONS.length - 1); return { phase: p[p.length - 1], qIndex: QUESTIONS.length - 1 }; }
+  if (phase === "outro") return { phase: "final", qIndex };
+  if (phase === "final") return lastOf(lastMainQ);
   const steps = stepsFor(qIndex);
   const at = steps.indexOf(phase);
   if (at > 0) return { phase: steps[at - 1], qIndex };
-  if (qIndex > 0) { const p = stepsFor(qIndex - 1); return { phase: p[p.length - 1], qIndex: qIndex - 1 }; }
+  const Q = QUESTIONS[qIndex];
+  const pv = QUESTIONS[qIndex - 1];
+  if (pv && pv.round === Q.round) return lastOf(qIndex - 1);
+  if (Q.extra) return lastOf(lastMainQ);                                 // back out of a spare video
+  for (let i = qIndex - 1; i >= 0; i--) if (!QUESTIONS[i].extra) return lastOf(i);
   return { phase: "lobby", qIndex: 0 };
 }
 export function describeStep(s) {
   if (!s) return "Game over";
   if (s.phase === "final") return "Reveal the winner";
+  if (s.phase === "outro") return CLOSING_VIDEO ? `Play closing video (${CLOSING_VIDEO.title})` : "Closing video";
   if (s.phase === "lobby") return "Lobby";
   const Q = QUESTIONS[s.qIndex];
   const n = qShort(s.qIndex);

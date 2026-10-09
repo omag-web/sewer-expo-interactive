@@ -20,6 +20,10 @@ Static site (GitHub Pages) + the Expo Wall's existing Firebase project (`sewer-e
 4. **How serious is it?** Watch it / Maintain it / Fix it / Act now
 5. **What would you do?** single pick
 
+**Videos:** Bartlesville 2, Bartlesville 2A, Mellenson and Barnsdall are the scored rounds (halftime standings after Bartlesville 2A, final standings after Barnsdall). **Yale** is a spare: Next skips it, but you can click *Play Yale* in the admin run of show if there's time; its points count and Next then goes to the final standings. **Smittle** is the closing video (`CLOSING_VIDEO` in `config.js`): it plays with sound after the winner is revealed, then a thank-you card.
+
+**Sound:** browsers only play video sound after someone has clicked or pressed a key on the screen page. At setup, click once on the screen (the full-screen button works). A small reminder shows in the corner until you do.
+
 **Scoring:** 100 points for each correct answer. Any incorrect pick on a question = 0 for that question, even if the correct ones were picked too. If a question has more than one accepted answer (e.g. Maintain it or Fix it), any one of them scores. A question with no answer key in `config.js` is asked as an unscored poll.
 
 Full-screen team standings show once at halftime (`standingsAfter` in `config.js`), and the finale shows the winners.

@@ -142,6 +142,9 @@ export const ROUND_QUESTIONS = [
 //            Leave a question out of answers and it's asked as an unscored poll:
 //            the room still votes and sees the results, nobody gets points.
 //   explain  optional one-liners shown on the screen at each reveal
+//   extra    true = a spare video "just in case": it's skipped unless you click
+//            it in the admin run of show; if played, its points count and Next
+//            goes on to the final standings
 // ─────────────────────────────────────────────────────────────
 export const ROUNDS = [
   {
@@ -165,13 +168,18 @@ export const ROUNDS = [
     answers: { seen: ["Crack", "Roots", "Offset(s)"], serious: ["Act now"] }
   },
   {
-    title: "Smittle",
-    video: { src: "video/Smittle - Edit - Final.mp4" },
-    answers: { }   // answers still to come: asked as polls until filled in
-  },
-  {
     title: "Yale",
-    video: { src: "video/Yale - Edit - Final.mp4" },   // file not uploaded yet
-    answers: { seen: ["Offset(s)", "Protruding taps"] }   // "serious" still to come
+    extra: true,                                        // spare video, only if there's time
+    video: { src: "video/Yale - Edit - Final.mp4" },    // file not uploaded yet
+    answers: { seen: ["Offset(s)", "Protruding taps"], serious: ["Fix it"] }
   }
 ];
+
+// Played after the winner is revealed to close the session. Not scored,
+// no questions. Plays with sound (see README: click the screen once at setup).
+// Set to null for no closing video.
+export const CLOSING_VIDEO = {
+  title: "Smittle",
+  src: "video/Smittle - Edit - Final.mp4",
+  endText: "Thanks for playing!"
+};
