@@ -263,7 +263,7 @@
     else if (phase === "video") swap(viewMsg("📺", QUESTIONS[q].roundTitle, "Eyes on the big screen. Questions open right after the video."), key);
     else if (phase === "question") swap(viewQuestion(q), key);
     else if (phase === "reveal") swap(viewReveal(q), key);
-    else if (phase === "leaderboard") swap(viewStanding(false), key);
+    else if (phase === "leaderboard" || phase === "standings") swap(viewStanding(false), key);
     else if (phase === "final") swap(viewStanding(true), key);
   }
 
@@ -495,8 +495,9 @@
     const v = el("div", "view center");
     const teams = ((game && game.teams) || []).filter((t) => t.players);
     const mine = teams.find((t) => t.id === me.team);
-    const done = scoredUpTo(final ? QUESTIONS.length : (game.qIndex || 0) + 1);
-    v.append(el("p", "eyebrow", final ? "Final results" : QUESTIONS[game.qIndex].standingsTitle), teamBadge(me.team));
+    const done = (game.scored || []).filter((i) => QUESTIONS[i] && !QUESTIONS[i].unscored).length; // scored questions so far
+    const stTitle = game.phase === "standings" ? "Team standings" : QUESTIONS[game.qIndex].standingsTitle;
+    v.append(el("p", "eyebrow", final ? "Final results" : stTitle), teamBadge(me.team));
     if (mine) {
       if (final && mine.rank === 1) v.append(el("div", "big-icon", "🏆"));
       v.append(el("h1", null, final && mine.rank === 1 ? "Your team won!" : `Your team is ${ordinal(mine.rank)}`));
@@ -508,7 +509,7 @@
     const s1 = el("div", "stat"); s1.append(el("b", null, fmt(me.score)), el("span", null, "you've added"));
     const s2 = el("div", "stat"); s2.append(el("b", null, `${me.correct || 0}/${done}`), el("span", null, "fully right"));
     stats.append(s1, s2);
-    v.append(stats, el("p", "note", final ? "Thanks for playing!" : /final/i.test(QUESTIONS[game.qIndex].standingsTitle) ? "And the winner is… eyes on the screen!" : /halftime/i.test(QUESTIONS[game.qIndex].standingsTitle) ? "Second half coming up…" : "Next video coming up…"));
+    v.append(stats, el("p", "note", final ? "Thanks for playing!" : game.phase === "standings" ? "Back to the game in a moment…" : /final/i.test(QUESTIONS[game.qIndex].standingsTitle) ? "And the winner is… eyes on the screen!" : /halftime/i.test(QUESTIONS[game.qIndex].standingsTitle) ? "Second half coming up…" : "Next video coming up…"));
     return v;
   }
 </script>

@@ -308,7 +308,7 @@
     clearInterval(tick); tick = null;
     if (phase !== "video") stopVideo();
     $("topRight").textContent = ["lobby", "final"].includes(phase) ? "" : qLabel(q);
-    const v = { lobby: viewLobby, video: viewVideo, question: viewQuestion, reveal: viewReveal, leaderboard: viewBoards, final: viewFinal }[phase];
+    const v = { lobby: viewLobby, video: viewVideo, question: viewQuestion, reveal: viewReveal, leaderboard: viewBoards, standings: viewBoards, final: viewFinal }[phase];
     body.replaceChildren(v ? v(q) : el("div"));
     update();
   }
@@ -622,7 +622,7 @@
     const v = view("standings");
     const eyebrow = el("p", "eyebrow");
     const bars = el("div", "tbars big");
-    v.append(el("h1", "st-title", QUESTIONS[game.qIndex].standingsTitle), eyebrow, bars);
+    v.append(el("h1", "st-title", game.phase === "standings" ? "Team standings" : QUESTIONS[game.qIndex].standingsTitle), eyebrow, bars);
     document.body.classList.add("full");
     let built = false;
     updaters.push(() => {
