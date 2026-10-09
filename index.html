@@ -34,11 +34,42 @@
   label.lbl { font-weight: 600; font-size: 16px; margin-bottom: -6px; }
 
   /* Join */
-  .teamnums { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .teamnums { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
   .tnum {
-    min-height: 46px; border-radius: 6px; cursor: pointer;
+    min-height: 38px; padding: 0; border-radius: 5px; cursor: pointer;
     background: var(--panel); border: 2px solid var(--edge); border-bottom: 4px solid var(--tc);
-    font-family: var(--cond); font-weight: 700; font-size: 21px;
+    font-family: var(--cond); font-weight: 700; font-size: 19px;
+  }
+  /* Join screen: compact so name, all teams and the button fit without scrolling */
+  .view.join { gap: 10px; padding-bottom: 74px; }
+  main:has(.view.join) { padding-top: 14px; padding-bottom: 0; }
+  .view.join h1 { font-size: 34px; line-height: 1; }
+  .view.join .tagline { font-size: 17px; margin: -4px 0 2px; }
+  .view.join input[type="text"] { padding: 11px 14px; font-size: 18px; }
+  .view.join .lbl { margin-bottom: -4px; }
+  .joinbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(rgba(24,23,22,0), var(--base) 30%);
+    display: grid; gap: 6px; max-width: 560px; margin: 0 auto;
+  }
+  .joinbar .err { min-height: 0; text-align: center; }
+  .joinbar .err:empty { display: none; }
+  @media (max-height: 700px) {
+    header { padding-top: calc(8px + env(safe-area-inset-top, 0px)); padding-bottom: 7px; }
+    header .logo { max-height: 32px; }
+    .view.join { gap: 8px; }
+    .view.join h1 { font-size: 30px; }
+    .view.join .tagline { font-size: 15px; }
+    .tnum { min-height: 34px; font-size: 18px; }
+    .teamnums { gap: 4px; }
+  }
+  @media (max-height: 600px) {
+    .view.join .tagline { display: none; }
+    .view.join h1 { font-size: 26px; }
+    .view.join input[type="text"] { padding: 9px 12px; }
+    .tnum { min-height: 31px; font-size: 17px; border-bottom-width: 3px; }
+    .joinbar .btn { min-height: 46px; }
   }
   .tnum[aria-checked="true"] { background: var(--tc); border-color: var(--tc); color: var(--accent-ink); transform: scale(1.06); }
   .err { color: var(--bad); font-weight: 600; min-height: 1.2em; margin: 0; }
@@ -245,11 +276,9 @@
 
   // ── Join / edit ──────────────────────────────────────
   function viewJoin(edit) {
-    const v = el("form", "view");
+    const v = el("form", "view join");
     v.noValidate = true;
-    if (!edit) v.append(el("p", "eyebrow", GAME.eventLine1), el("h1", null, GAME.title),
-      el("p", "tagline", GAME.subtitle || ""),
-      el("p", "sub", "Enter your name and pick your team number. Every right answer scores points for your team."));
+    if (!edit) v.append(el("h1", null, GAME.title), el("p", "tagline", GAME.subtitle || ""));
     else v.append(el("h2", null, "Change name or team"));
     const lbl = el("label", "lbl", "Your name"); lbl.htmlFor = "nm";
     const inp = el("input"); inp.type = "text"; inp.id = "nm"; inp.maxLength = GAME.maxNameLength;
@@ -273,8 +302,11 @@
     showPicked();
     const err = el("p", "err");
     const go = el("button", "btn", edit ? "Save" : "Join the game"); go.type = "submit";
-    v.append(grid, err, go);
-    if (edit) { const c = el("button", "btn ghost", "Cancel"); c.type = "button"; c.onclick = () => { lastKey = null; render(); }; v.append(c); }
+    // Join/Save stays pinned to the bottom of the screen
+    const bar = el("div", "joinbar");
+    bar.append(err, go);
+    if (edit) { const c = el("button", "btn ghost", "Cancel"); c.type = "button"; c.onclick = () => { lastKey = null; render(); }; bar.append(c); }
+    v.append(grid, bar);
     v.onsubmit = async (e) => {
       e.preventDefault();
       const name = inp.value.trim().replace(/\s+/g, " ");
