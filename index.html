@@ -34,15 +34,13 @@
   label.lbl { font-weight: 600; font-size: 16px; margin-bottom: -6px; }
 
   /* Join */
-  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .team-btn {
-    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
-    min-height: 78px; padding: 12px 14px; border-radius: 8px; cursor: pointer;
-    background: var(--panel); border: 2px solid var(--edge); text-align: left;
-    font-family: var(--cond); font-weight: 700; font-size: 22px; line-height: 1;
+  .teamnums { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .tnum {
+    min-height: 46px; border-radius: 6px; cursor: pointer;
+    background: var(--panel); border: 2px solid var(--edge); border-bottom: 4px solid var(--tc);
+    font-family: var(--cond); font-weight: 700; font-size: 21px;
   }
-  .team-btn .bar { width: 34px; height: 6px; border-radius: 3px; background: var(--tc); }
-  .team-btn[aria-pressed="true"] { border-color: var(--tc); background: color-mix(in srgb, var(--tc) 22%, var(--panel)); }
+  .tnum[aria-checked="true"] { background: var(--tc); border-color: var(--tc); color: var(--accent-ink); transform: scale(1.06); }
   .err { color: var(--bad); font-weight: 600; min-height: 1.2em; margin: 0; }
 
   .center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; }
@@ -131,8 +129,9 @@
   import { doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, auth, db, gameRef, answerId, $, el, setLogo, choiceMark, qLabel,
-    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError
+    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError, enableAdminShortcut
   } from "./game.js";
+  enableAdminShortcut();
 
   document.title = GAME.title;
   setLogo($("logo"));
@@ -250,24 +249,28 @@
     v.noValidate = true;
     if (!edit) v.append(el("p", "eyebrow", GAME.eventLine1), el("h1", null, GAME.title),
       el("p", "tagline", GAME.subtitle || ""),
-      el("p", "sub", "Enter your name and pick a team. Every answer scores points for your team — faster answers score more."));
+      el("p", "sub", "Enter your name and pick your team number. Every right answer scores points for your team."));
     else v.append(el("h2", null, "Change name or team"));
     const lbl = el("label", "lbl", "Your name"); lbl.htmlFor = "nm";
     const inp = el("input"); inp.type = "text"; inp.id = "nm"; inp.maxLength = GAME.maxNameLength;
     inp.autocomplete = "name"; inp.placeholder = "First and last name";
     inp.value = edit ? me.name : (localStorage.getItem("expoName") || "");
-    v.append(lbl, inp, el("label", "lbl", "Your team"));
+    const teamLbl = el("label", "lbl", "Your team number");
+    v.append(lbl, inp, teamLbl);
     let team = edit ? me.team : localStorage.getItem("expoTeam");
     if (!TEAMS.some((t) => t.id === team)) team = null;
-    const grid = el("div", "teams");
+    const grid = el("div", "teamnums");
+    grid.setAttribute("role", "radiogroup"); grid.setAttribute("aria-label", "Team number");
+    const showPicked = () => { teamLbl.textContent = team ? `Your team number: ${teamById(team).num}` : "Your team number"; };
     TEAMS.forEach((t) => {
-      const b = el("button", "team-btn"); b.type = "button";
+      const b = el("button", "tnum", String(t.num)); b.type = "button";
       b.style.setProperty("--tc", t.color);
-      b.setAttribute("aria-pressed", String(t.id === team));
-      b.append(el("span", "bar"), el("span", null, t.name));
-      b.onclick = () => { team = t.id; grid.querySelectorAll(".team-btn").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); };
+      b.setAttribute("role", "radio"); b.setAttribute("aria-label", t.name);
+      b.setAttribute("aria-checked", String(t.id === team));
+      b.onclick = () => { team = t.id; grid.querySelectorAll(".tnum").forEach((x) => x.setAttribute("aria-checked", String(x === b))); showPicked(); };
       grid.append(b);
     });
+    showPicked();
     const err = el("p", "err");
     const go = el("button", "btn", edit ? "Save" : "Join the game"); go.type = "submit";
     v.append(grid, err, go);
@@ -276,7 +279,7 @@
       e.preventDefault();
       const name = inp.value.trim().replace(/\s+/g, " ");
       if (name.length < 2) { err.textContent = "Enter your name."; inp.focus(); return; }
-      if (!team) { err.textContent = "Pick a team."; return; }
+      if (!team) { err.textContent = "Tap your team number."; return; }
       if (joining) return;
       joining = true; go.disabled = true; err.textContent = "";
       try {

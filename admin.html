@@ -59,7 +59,7 @@
   .qrow .txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .qrow .st { font-size: 13px; color: var(--muted); font-weight: 600; white-space: nowrap; }
 
-  .board { display: grid; gap: 4px; }
+  .board { display: grid; gap: 4px; max-height: 420px; overflow: auto; }
   .brow { display: grid; grid-template-columns: 30px 14px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 6px; background: var(--panel2); }
   .brow .rk { font-family: var(--cond); font-weight: 700; color: var(--muted); }
   .brow .sc { font-weight: 700; color: var(--accent); }

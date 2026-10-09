@@ -1,6 +1,6 @@
 # What Lies Beneath — See the Pipe, Make the Call, Live with the Consequences
 
-Live team game for the 2026 OMAG Sanitary Sewer Expo. Attendees join on their phones with their name and a team, watch pipe-inspection videos on the big screen, and answer four questions after each one. Every answer scores for their team; the big screen shows live answer bars, a bell curve for confidence, and team standings.
+Live team game for the 2026 OMAG Sanitary Sewer Expo. Attendees join on their phones with their name and a team number (1–52), watch pipe-inspection videos on the big screen, and answer four questions after each one. Every answer scores for their team; the big screen shows live answer bars, a bell curve for confidence, and team standings.
 
 Static site (GitHub Pages) + the Expo Wall's existing Firebase project (`sewer-expo-social-wall`). Game data lives under `games/{id}` in Firestore and never touches the wall's posts.
 
@@ -10,7 +10,7 @@ Static site (GitHub Pages) + the Expo Wall's existing Firebase project (`sewer-e
 |---|---|---|
 | `index.html` | Attendees' phones | Join (name + team), answer, see correct/incorrect, team standing. **Key** button shows the decision key anytime. |
 | `screen.html` | Projector / ProPresenter web view | Lobby with QR + decision key, videos, live answer bars, bell curve, team standings, finale. Click once to start (unlocks video sound). `F` = full screen, `C` = show cursor. |
-| `admin.html` | Presenter | Admin console: run of show, Next/Back (clicker keys work), live answers, team board, roster (remove a player), Redo this question, Reset scores, Reset game. Sign in with the Expo Wall moderator login. |
+| `admin.html` | Presenter (or type **beneath** on the screen or player page) | Admin console: run of show, Next/Back (clicker keys work), live answers, team board, roster (remove a player), Redo this question, Reset scores, Reset game. Sign in with the Expo Wall moderator login. |
 
 ## Each video round
 
@@ -38,8 +38,8 @@ Everything editable is in `config.js`:
 - `ROUNDS` — videos, correct answers, reveal notes
 - `ROUND_QUESTIONS` — the questions asked after every video and their choices
 - `DECISIONS` — the decision key
-- `TEAMS` — team names and colors
-- `GAME` — title, timers, scoring, `confidenceWager` (off by default; when on, confidence 4–5 boosts right answers and costs points on wrong ones)
+- `TEAM_COUNT` — number of teams (default 52, named Team 1–52)
+- `GAME` — title, timers, scoring (100 points per correct answer; speed doesn't matter), `confidenceWager` (off by default; when on, confidence 4–5 boosts right answers and costs points on wrong ones)
 - `GAME.id` — change it to start a completely fresh game without deleting the old one
 
 ## Day-of checklist

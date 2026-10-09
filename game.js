@@ -64,7 +64,7 @@ export const answerId = (uid, q) => `${uid}_${q}`;
 
 export const $ = (id) => document.getElementById(id);
 export const LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
-export const teamById = (id) => TEAMS.find((t) => t.id === id) || { id, name: "No team", color: "#888" };
+export const teamById = (id) => TEAMS.find((t) => t.id === id) || { id, name: "No team", color: "#888", num: 0 };
 export const timeLimitFor = (i) => (QUESTIONS[i] && QUESTIONS[i].time) || GAME.defaultTimeLimit;
 
 export function el(tag, cls, text) {
@@ -133,10 +133,8 @@ export function grade(Q, picks) {
 export function pointsFor({ frac, exact, elapsedMs, limitSec, streakBefore, conf }) {
   const w = GAME.confidenceWager && conf ? GAME.wager[conf] : null;
   if (!frac) return w ? w.wrong : 0;
-  const t = Math.min(1, Math.max(0, elapsedMs / (limitSec * 1000)));
-  const speed = Math.round(GAME.speedBonus * (1 - t));
-  const streak = exact ? Math.min(GAME.streakBonusMax, GAME.streakBonus * streakBefore) : 0;
-  return Math.round((frac * (GAME.basePoints + speed) + streak) * (w ? w.right : 1));
+  const streak = exact ? Math.min(GAME.streakBonusMax || 0, (GAME.streakBonus || 0) * streakBefore) : 0;
+  return Math.round((frac * GAME.basePoints + streak) * (w ? w.right : 1));
 }
 export const scoredUpTo = (n) => QUESTIONS.slice(0, n).filter((q) => !q.unscored).length;
 
@@ -152,14 +150,15 @@ export function rankPlayers(players) {
 }
 
 export function teamStandings(players) {
-  const rows = TEAMS.map((t) => {
+  // only teams with at least one player are ranked
+  const rows = TEAMS.filter((t) => players.some((p) => p.team === t.id)).map((t) => {
     const members = players.filter((p) => p.team === t.id);
     const total = members.reduce((s, p) => s + (p.score || 0), 0);
     const avg = members.length ? Math.round(total / members.length) : 0;
-    return { id: t.id, name: t.name, color: t.color, players: members.length, total, avg };
+    return { id: t.id, name: t.name, color: t.color, num: t.num, players: members.length, total, avg };
   });
   const key = GAME.teamScoring === "total" ? "total" : "avg";
-  rows.sort((a, b) => b[key] - a[key] || b.players - a.players);
+  rows.sort((a, b) => b[key] - a[key] || b.players - a.players || (a.num || 0) - (b.num || 0));
   let rank = 0, prev = null;
   rows.forEach((r, i) => { if (r[key] !== prev) { rank = i + 1; prev = r[key]; } r.rank = rank; r.value = r[key]; });
   return rows;
@@ -203,4 +202,21 @@ export function explainError(e) {
   if (code === "unavailable" || code === "auth/network-request-failed")
     return { title: "Can't connect", msg: "Check your signal and reload the page.", code };
   return { title: "Something went wrong", msg: (e && e.message) || "Reload the page and try again.", code };
+}
+
+// Short "T12" style label for tight spaces
+export const teamShort = (id) => { const t = teamById(id); return t.num ? `T${t.num}` : t.name; };
+
+// Secret typing shortcut to the admin console (GAME.adminCode).
+export function enableAdminShortcut() {
+  const code = (GAME.adminCode || "").toLowerCase();
+  if (!code) return;
+  let typed = "";
+  addEventListener("keydown", (e) => {
+    const t = document.activeElement && document.activeElement.tagName;
+    if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT") { typed = ""; return; }
+    if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
+    typed = (typed + e.key.toLowerCase()).slice(-code.length);
+    if (typed === code) location.href = "admin.html" + (location.search.includes("emulator=1") ? "?emulator=1" : "");
+  });
 }

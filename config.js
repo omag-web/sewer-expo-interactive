@@ -30,12 +30,12 @@ export const GAME = {
   // Leave "" to auto-detect from wherever screen.html is hosted.
   joinUrl: "",
 
-  // Scoring (every player's points go to their team)
+  // Scoring (every player's points go to their team). Speed doesn't matter —
+  // any answer locked in before the timer ends scores the same.
   defaultTimeLimit: 20,   // seconds per question unless the question sets its own
-  basePoints: 500,        // for a correct answer
-  speedBonus: 500,        // up to this much more for answering fast (scales to 0 at the buzzer)
-  streakBonus: 100,       // per fully-correct answer in a row after the first...
-  streakBonusMax: 300,    // ...capped here
+  basePoints: 100,        // for a correct answer
+  streakBonus: 0,         // optional: extra points per fully-correct answer in a row (0 = off)
+  streakBonusMax: 0,      // ...capped here
   // Pick-all-that-apply questions give partial credit:
   // (right picks − wrong picks) ÷ number of right answers, never below zero.
 
@@ -47,8 +47,8 @@ export const GAME = {
     1: { right: 0.8, wrong: 0 },
     2: { right: 0.9, wrong: 0 },
     3: { right: 1.0, wrong: 0 },
-    4: { right: 1.2, wrong: -100 },
-    5: { right: 1.4, wrong: -200 }
+    4: { right: 1.2, wrong: -25 },
+    5: { right: 1.4, wrong: -50 }
   },
 
   // Team standings: "average" (fair when teams are uneven) or "total"
@@ -58,17 +58,25 @@ export const GAME = {
   // or everyone has answered
   autoReveal: true,
 
-  maxNameLength: 24
+  maxNameLength: 24,
+
+  leaderboardSize: 25,    // teams shown on the screen's standings (two columns)
+
+  // Type this on the screen or the player page (on a keyboard, not in a text box)
+  // to jump to the admin console — same idea as the AI Control Room's code word.
+  adminCode: "beneath"
 };
 
-// Players pick one of these when they join. id must be unique and stay
-// the same once the game starts; name and color can change any time.
-export const TEAMS = [
-  { id: "force-main",   name: "Force Main",    color: "#d49c61" },
-  { id: "lift-station", name: "Lift Station",  color: "#5b9bd5" },
-  { id: "manhole",      name: "Manhole Crew",  color: "#6cc08b" },
-  { id: "grease-trap",  name: "Grease Trap",   color: "#e06c5a" }
-];
+// Players pick one of these when they join. Change TEAM_COUNT to add or
+// remove teams; they're named "Team 1", "Team 2", … and each gets its own color.
+export const TEAM_COUNT = 52;
+export const TEAMS = Array.from({ length: TEAM_COUNT }, (_, i) => ({
+  id: `team-${i + 1}`,
+  name: `Team ${i + 1}`,
+  num: i + 1,
+  // golden-angle hues so neighbouring team numbers never look alike
+  color: `hsl(${Math.round((i * 137.508) % 360)}, 62%, 62%)`
+}));
 
 // The decision key — shown in the lobby, on the "How serious" question,
 // and behind the Key button on every phone.
