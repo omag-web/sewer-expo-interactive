@@ -15,7 +15,7 @@ Static site (GitHub Pages) + the Expo Wall's existing Firebase project (`sewer-e
 ## Each video round
 
 1. Video plays on the screen
-2. **How confident is your team?** 1–5 slider on phones, not scored → bell curve at the reveal
+2. **How confident is your team?** free slider on phones (Not confident → Extremely confident), not scored → bell curve with the room average at the reveal
 3. **What did you see?** pick all that apply
 4. **How serious is it?** Watch it / Maintain it / Fix it / Act now
 5. **What would you do?** single pick
@@ -28,7 +28,7 @@ Static site (GitHub Pages) + the Expo Wall's existing Firebase project (`sewer-e
 
 Full-screen team standings show once at halftime (`standingsAfter` in `config.js`), and the finale shows the winners.
 
-Every question gets **2 minutes** for table discussion (`defaultTimeLimit` in `config.js`). When a video ends, the screen moves straight to the first question.
+Every question gets **2 minutes** for table discussion (`defaultTimeLimit` in `config.js`). When a video ends, a "Get ready" card shows for 5 seconds, then the first question opens.
 The admin page reveals automatically when time runs out or everyone has answered.
 
 ## Setup (one time)

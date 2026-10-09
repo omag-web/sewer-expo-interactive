@@ -106,18 +106,21 @@
   .choice.dim { opacity: .35; }
   /* confidence slider */
   .slider { background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; padding: 18px 16px 14px; text-align: center; }
-  .sl-val { font-family: var(--cond); font-weight: 700; font-size: 72px; line-height: 1; color: var(--accent); }
-  .sl-word { font-weight: 700; font-size: 18px; margin: 4px 0 16px; min-height: 1.3em; }
   .slider input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 14px; border-radius: 7px; outline: none; margin: 0;
     background: linear-gradient(90deg, var(--accent) 0 var(--pct, 50%), var(--panel2) var(--pct, 50%) 100%); }
   .slider input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 36px; height: 36px; border-radius: 50%; background: #fff; border: 5px solid var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.5); cursor: pointer; }
   .slider input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 5px solid var(--accent); cursor: pointer; }
   .slider input[type=range]:focus-visible::-webkit-slider-thumb { outline: 3px solid #fff; outline-offset: 2px; }
-  .sl-ticks { display: flex; justify-content: space-between; margin: 12px -4px 4px; }
-  .sl-tick { width: 40px; height: 34px; border-radius: 6px; border: 1px solid var(--edge); background: transparent; color: var(--muted); font-family: var(--cond); font-weight: 700; font-size: 19px; cursor: pointer; }
-  .sl-tick.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   .slider.locked { opacity: .75; }
-  .slider .scale-ends { margin-top: 6px; }
+  .slider .scale-ends { margin-top: 14px; font-size: 15px; color: var(--accent); font-weight: 700; }
+  .slider { padding-top: 26px; }
+  .compare { width: 100%; }
+  .compare .scale-ends { margin-top: 34px; }
+  .cmp-track { position: relative; height: 14px; border-radius: 7px; margin: 34px 12px 6px; background: linear-gradient(90deg, #8a8178, #d49c61 60%, #e9b27a); }
+  .cmp-mark { position: absolute; top: 50%; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; border: 4px solid var(--base); }
+  .cmp-mark span { position: absolute; left: 50%; transform: translateX(-50%); font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .cmp-mark.you { background: #fff; z-index: 2; } .cmp-mark.you span { bottom: 26px; color: #fff; }
+  .cmp-mark.room { background: var(--accent); } .cmp-mark.room span { top: 26px; color: var(--accent); }
   .tagline { color: var(--accent); font-family: var(--cond); font-weight: 700; font-size: 21px; line-height: 1.15; margin: -4px 0 0; }
   .choices.scale { grid-template-columns: repeat(5, 1fr); gap: 8px; }
   .choices.scale .choice { min-height: 76px; justify-content: center; padding: 0; border-left-width: 2px; border-top: 8px solid var(--c); }
@@ -175,7 +178,7 @@
   import { doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, auth, db, gameRef, answerId, $, el, setLogo, choiceMark, qLabel,
-    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError, enableAdminShortcut, fmtClock
+    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError, enableAdminShortcut, fmtClock, scaleValue
   } from "./game.js";
   enableAdminShortcut();
 
@@ -371,7 +374,8 @@
     return [el("span", c.emoji ? "lt emo" : "lt", choiceMark(c, k)), t];
   }
 
-  // ── Confidence: 1–5 slider ───────────────────────────
+  // ── Confidence: free slider from "Not confident" to "Extremely confident" ──
+  // Stored as picks: [value − 1] with value anywhere from 1 to 5 (e.g. 3.4).
   let sliderVal = 3;
   function viewSlider(i) {
     const Q = QUESTIONS[i];
@@ -386,35 +390,23 @@
     const locked = picksNow();
     const val = locked ? locked[0] + 1 : sliderVal;
     const box = el("div", "slider" + (locked ? " locked" : ""));
-    const big = el("div", "sl-val", String(val));
-    const word = el("div", "sl-word");
-    const words = ["Not confident", "A little confident", "Somewhat confident", "Very confident", "Extremely confident"];
-    words[0] = Q.low || words[0]; words[4] = Q.high || words[4];
-    const range = el("input"); range.type = "range"; range.min = "1"; range.max = "5"; range.step = "1"; range.value = String(val);
-    range.setAttribute("aria-label", Q.q); range.disabled = !!locked;
-    const ticks = el("div", "sl-ticks");
-    for (let n = 1; n <= 5; n++) {
-      const t = el("button", "sl-tick", String(n)); t.type = "button"; t.disabled = !!locked;
-      t.onclick = () => { range.value = String(n); paint(); };
-      ticks.append(t);
-    }
-    const ends = el("div", "scale-ends"); ends.append(el("span", null, words[0]), el("span", null, words[4]));
+    const range = el("input"); range.type = "range"; range.min = "1"; range.max = "5"; range.step = "any"; range.value = String(val);
+    range.setAttribute("aria-label", `${Q.q} From ${Q.low} to ${Q.high}`); range.disabled = !!locked;
+    const ends = el("div", "scale-ends"); ends.append(el("span", null, Q.low || "Not confident"), el("span", null, Q.high || "Extremely confident"));
     const paint = () => {
       const n = Number(range.value);
       if (!locked) sliderVal = n;
-      big.textContent = String(n); word.textContent = words[n - 1];
       range.style.setProperty("--pct", `${((n - 1) / 4) * 100}%`);
-      ticks.querySelectorAll(".sl-tick").forEach((t, k) => t.classList.toggle("on", k + 1 === n));
     };
     range.oninput = paint;
-    box.append(big, word, range, ticks, ends);
+    box.append(range, ends);
     v.append(box);
     paint();
 
     let lockBtn = null;
     if (!locked) {
       lockBtn = el("button", "btn", "Lock in"); lockBtn.type = "button";
-      lockBtn.onclick = () => submit(i, [Number(range.value) - 1]);
+      lockBtn.onclick = () => submit(i, [Math.round((Number(range.value) - 1) * 100) / 100]);
       v.append(lockBtn);
     }
     const status = el("p", "locked", locked ? "Locked in. Waiting for the room…" : "");
@@ -575,28 +567,25 @@
   function viewScaleReveal(i) {
     const Q = QUESTIONS[i];
     const v = el("div", "view center");
-    const mine = myAnswer ? myAnswer.picks[0] : null;
-    v.append(el("p", "eyebrow", Q.q));
-    v.append(el("h1", null, mine != null ? `You said ${Q.choices[mine].label}` : "No answer"));
-    const dist = (game.dist && game.dist.length === Q.choices.length) ? game.dist : null;
-    if (dist) {
-      const max = Math.max(1, ...dist);
-      const h = el("div", "hist");
-      dist.forEach((n, k) => {
-        const col = el("div", `hcol${k === mine ? " me" : ""}`);
-        const barEl = el("i"); barEl.style.height = `${(n / max) * 100}%`;
-        col.append(el("b", null, String(n)), barEl, el("span", null, Q.choices[k].label));
-        h.append(col);
-      });
-      v.append(h);
-      if (game.avg != null) v.append(el("p", "sub", `Room average: ${game.avg.toFixed(1)} of 5`));
-    }
-    if (GAME.confidenceWager && mine != null) {
-      const w = GAME.wager[mine + 1];
-      v.append(el("p", "note", `Wager for this video: ×${w.right} when right${w.wrong ? `, ${w.wrong} when wrong` : ""}`));
+    const mine = myAnswer ? scaleValue(myAnswer) : null;
+    v.append(el("p", "eyebrow", Q.q), el("h2", null, "Your team vs. the room"));
+    // one track, two markers: where you slid, and the room average
+    const box = el("div", "slider compare");
+    const track = el("div", "cmp-track");
+    const at = (x) => `${((x - 1) / 4) * 100}%`;
+    if (game.avg != null) { const r = el("div", "cmp-mark room"); r.style.left = at(game.avg); r.append(el("span", null, "Room")); track.append(r); }
+    if (mine != null) { const m = el("div", "cmp-mark you"); m.style.left = at(mine); m.append(el("span", null, "You")); track.append(m); }
+    const ends = el("div", "scale-ends"); ends.append(el("span", null, Q.low), el("span", null, Q.high));
+    box.append(track, ends);
+    v.append(box);
+    if (mine == null) v.append(el("p", "sub", "No answer this time."));
+    else if (game.avg != null) {
+      const d = mine - game.avg;
+      v.append(el("p", "sub", Math.abs(d) < 0.4 ? "You're right in line with the room." : d > 0 ? "You're more confident than the room." : "You're less confident than the room."));
     }
     return v;
   }
+
 
   // ── Standings ────────────────────────────────────────
   function viewStanding(final) {

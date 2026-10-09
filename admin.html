@@ -245,7 +245,7 @@
   import {
     GAME, QUESTIONS, auth, db, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qShort, qLabel, scoredUpTo,
     teamById, stepsFor, nextStep, prevStep, describeStep, pointsFor, grade, rankPlayers, teamStandings,
-    teamValueLabel, remainingMs, timeLimitFor, fmt, explainError, videoSignalRef, fmtClock, CLOSING_VIDEO
+    teamValueLabel, remainingMs, timeLimitFor, fmt, explainError, videoSignalRef, fmtClock, CLOSING_VIDEO, scaleValue, scaleBucket
   } from "./game.js";
 
   setLogo($("logo"));
@@ -452,9 +452,11 @@
     const byUid = new Map(snap.docs.map((d) => [d.data().uid, { ref: d.ref, ...d.data() }]));
 
     // answer spread for the screen and phones (bell curve on the confidence question)
-    const dist = Q.choices.map((_, k) => [...byUid.values()].filter((a) => (a.picks || []).includes(k)).length);
-    const n = dist.reduce((s, x) => s + x, 0);
-    const avg = Q.scale && n ? dist.reduce((s, x, k) => s + x * (k + 1), 0) / n : null;
+    const vals = Q.scale ? [...byUid.values()].map(scaleValue).filter((x) => x != null) : [];
+    const dist = Q.scale
+      ? Q.choices.map((_, k) => vals.filter((v) => scaleBucket(v) === k).length)
+      : Q.choices.map((_, k) => [...byUid.values()].filter((a) => (a.picks || []).includes(k)).length);
+    const avg = Q.scale && vals.length ? vals.reduce((s, x) => s + x, 0) / vals.length : null;
 
     if (Q.unscored) {
       return updateDoc(gameRef, { phase: "reveal", qIndex: i, scored: arrayUnion(i), dist, avg, updatedAt: serverTimestamp() });
@@ -464,7 +466,7 @@
     const conf = new Map();
     if (GAME.confidenceWager && Q.confIndex >= 0) {
       const c = await getDocs(query(answersCol, where("q", "==", Q.confIndex)));
-      c.docs.forEach((d) => conf.set(d.data().uid, (d.data().picks || [])[0] + 1));
+      c.docs.forEach((d) => { const v = scaleValue(d.data()); if (v != null) conf.set(d.data().uid, Math.round(v)); });
     }
 
     const next = players.map((p) => {
@@ -548,10 +550,12 @@
     const qs = QUESTIONS.map((Q, i) => {
       const list = byQ.get(i) || [];
       const n = list.length;
-      const counts = Q.choices.map((_, k) => list.filter((a) => (a.picks || []).includes(k)).length);
+      const counts = Q.scale
+        ? Q.choices.map((_, k) => list.filter((a) => scaleValue(a) != null && scaleBucket(scaleValue(a)) === k).length)
+        : Q.choices.map((_, k) => list.filter((a) => (a.picks || []).includes(k)).length);
       const r = { Q, i, n, counts };
       if (Q.scale) {
-        const sum = list.reduce((t, a) => t + ((a.picks || [])[0] + 1), 0);
+        const sum = list.reduce((t, a) => t + (scaleValue(a) || 0), 0);
         r.avg = n ? sum / n : null;
       } else if (!Q.noKey) {
         const gs = list.map((a) => grade(Q, a.picks));
@@ -841,7 +845,9 @@
     if (["lobby", "final", "outro", "standings"].includes(game.phase) || (game.phase === "leaderboard")) { box.hidden = true; return; }
     box.hidden = false;
     const i = game.qIndex, Q = QUESTIONS[i];
-    const counts = Q.choices.map((_, k) => answers.filter((a) => (a.picks || []).includes(k)).length);
+    const counts = Q.scale
+      ? Q.choices.map((_, k) => answers.filter((a) => scaleValue(a) != null && scaleBucket(scaleValue(a)) === k).length)
+      : Q.choices.map((_, k) => answers.filter((a) => (a.picks || []).includes(k)).length);
     const total = Math.max(1, answers.length);
     box.replaceChildren();
     const tags = el("div");

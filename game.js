@@ -272,3 +272,8 @@ export function enableAdminShortcut() {
     }
   });
 }
+
+// Confidence answers are stored as picks: [value − 1], where value slides
+// freely from 1 to 5 (e.g. 3.4). These read them back.
+export const scaleValue = (a) => { const p = ((a && a.picks) || [])[0]; return typeof p === "number" ? p + 1 : null; };
+export const scaleBucket = (v) => Math.min(5, Math.max(1, Math.round(v))) - 1;   // nearest whole step, 0–4

@@ -14,7 +14,8 @@
   /* Built for a 16:9 display; everything scales with the viewport. */
   html, body { height: 100%; overflow: hidden; }
   body { font-size: 1.6vh; }
-  .soundchip { position: fixed; left: 1.2vw; bottom: 1.6vh; z-index: 40; background: rgba(24,23,22,.8); border: 1px solid var(--edge); color: var(--muted); padding: .7vh 1vw; border-radius: 99px; font-size: 1.7vh; font-weight: 600; }
+  .soundchip { flex: none; background: rgba(24,23,22,.8); border: 1px solid var(--edge); color: var(--muted); padding: .6vh 1vw; border-radius: 99px; font-size: 1.7vh; font-weight: 600; }
+  body.preview .soundchip { display: none; }
   .vready .end-logo { max-height: 12vh; max-width: 30vw; object-fit: contain; margin-bottom: 2vh; }
   .soundhint { position: absolute; left: 50%; bottom: 4vh; transform: translateX(-50%); background: rgba(0,0,0,.7); color: #fff; padding: 1vh 1.6vw; border-radius: 99px; font-size: 2.4vh; font-weight: 600; z-index: 2; }
   /* small full-screen toggle, bottom-right corner */
@@ -123,10 +124,9 @@
   .bs-track { position: relative; display: flex; justify-content: space-between; align-items: center; height: 14vh; }
   .bs-track::before { content: ""; position: absolute; left: 3vh; right: 3vh; top: 50%; height: 1.6vh; transform: translateY(-50%); border-radius: 1vh;
     background: linear-gradient(90deg, #8a8178, #d49c61 60%, #e9b27a); }
-  .bs-stop { position: relative; display: flex; flex-direction: column; align-items: center; width: 6vh; }
-  .bs-stop i { width: 6vh; height: 6vh; border-radius: 50%; background: var(--base); border: .7vh solid var(--accent); }
-  .bs-stop b { position: absolute; top: 8.2vh; font-family: var(--cond); font-size: 6vh; line-height: 1; }
-  .bs-ends { display: flex; justify-content: space-between; margin-top: 9vh; font-size: 3.2vh; font-weight: 700; color: var(--accent); }
+  .bs-knob { position: absolute; left: 50%; top: 50%; width: 8vh; height: 8vh; margin: -4vh 0 0 -4vh; border-radius: 50%; background: #fff; border: 1vh solid var(--accent); box-shadow: 0 .6vh 2vh rgba(0,0,0,.5); animation: knob 3.5s ease-in-out infinite alternate; }
+  @keyframes knob { from { left: 22%; } to { left: 78%; } }
+  .bs-ends { display: flex; justify-content: space-between; margin-top: 4vh; font-size: 3.6vh; font-weight: 700; color: var(--accent); }
   .scale-q .grid4 { grid-template-columns: repeat(5, 1fr) !important; grid-template-rows: 1fr !important; max-height: 40vh; }
   .scale-q .ch { justify-content: center; border-left: 0; border-top: 1.4vh solid var(--c); }
   .scale-q .ch .tx, .scale-q .ch .ct, .scale-q .ch .fill { display: none; }
@@ -137,7 +137,7 @@
   .bellchart svg { width: 100%; height: 100%; }
   .bc-n { fill: #b3aca4; font: 600 30px Barlow, sans-serif; }
   .bc-l { fill: #fff; font: 700 58px "Barlow Condensed", sans-serif; }
-  .bc-end { fill: #d49c61; font: 700 30px Barlow, sans-serif; }
+  .bc-end { fill: #d49c61; font: 700 38px Barlow, sans-serif; }
   .bc-avg { fill: #d49c61; font: 700 48px "Barlow Condensed", sans-serif; }
   .bellfill { opacity: 0; animation: fadein .9s .9s ease forwards; }
   .bellline { stroke-dasharray: 5000; stroke-dashoffset: 5000; animation: draw 1.6s .2s ease forwards; }
@@ -234,7 +234,7 @@
   import { onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qLabel,
-    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut, fmtClock, videoSignalRef, auth, CLOSING_VIDEO
+    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut, fmtClock, videoSignalRef, auth, CLOSING_VIDEO, scaleValue
   } from "./game.js";
   import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -386,7 +386,8 @@
       r.append(el("p", "eyebrow", Q.roundTitle), el("h1", null, "Get ready!"), el("p", null, `Grab your phone — first up: ${Q.q}`));
       wrap.append(r);
     };
-    const ended = () => { ready(); videoEnded(i); };
+    // "Get ready" card stays up 5 seconds, then the first question opens
+    const ended = () => { ready(); setTimeout(() => videoEnded(i), 5000); };
     const failed = (msg) => {
       ready();
       setTimeout(() => videoEnded(i), 5000); // don't stall the room on a broken video
@@ -452,8 +453,8 @@
   // Until someone clicks or presses a key on this page, browsers won't play
   // video sound. A small reminder sits in the corner until that happens.
   if (!PREVIEW && !(navigator.userActivation && navigator.userActivation.hasBeenActive)) {
-    const chip = el("div", "soundchip", "🔈 Click once on this screen to turn on video sound");
-    document.body.append(chip);
+    const chip = el("div", "soundchip", "🔈 Click once here to turn on video sound");
+    document.querySelector(".top").insertBefore(chip, $("topRight"));   // sits in the top bar, clear of the slide
     const off = () => { chip.remove(); removeEventListener("pointerdown", off); removeEventListener("keydown", off); };
     addEventListener("pointerdown", off); addEventListener("keydown", off);
   }
@@ -511,7 +512,7 @@
       // slider graphic matching what phones see
       const sl = el("div", "bigslider");
       const track = el("div", "bs-track");
-      for (let n = 1; n <= 5; n++) { const s = el("div", "bs-stop"); s.append(el("i"), el("b", null, String(n))); track.append(s); }
+      const knob = el("div", "bs-knob"); track.append(knob);
       const ends = el("div", "bs-ends"); ends.append(el("span", null, Q.low || ""), el("span", null, Q.high || ""));
       sl.append(track, ends);
       v.append(top, sl, foot);
@@ -609,62 +610,51 @@
     foot.append(left, right); v.append(foot);
     let sig = null;
     updaters.push(() => {
-      const n = Q.choices.length;
-      const dist = Q.choices.map((_, k) => answers.filter((a) => (a.picks || [])[0] === k).length);
-      const s = dist.join(",");
+      const vals = answers.map(scaleValue).filter((x) => x != null);
+      const s = vals.join(",");
       if (s === sig) return; sig = s;
-      const total = dist.reduce((a, b) => a + b, 0);
-      const mean = total ? dist.reduce((a, x, k) => a + x * (k + 1), 0) / total : 0;
-      const sd = total ? Math.sqrt(dist.reduce((a, x, k) => a + x * Math.pow(k + 1 - mean, 2), 0) / total) : 0;
-      chart.innerHTML = bellSVG(dist, mean, sd, Q.choices, Q.low, Q.high);
-      left.replaceChildren(el("b", null, total ? mean.toFixed(1) : "–"), document.createTextNode(" average confidence · "), el("b", null, String(total)), document.createTextNode(total === 1 ? " response" : " responses"));
+      const total = vals.length;
+      const mean = total ? vals.reduce((a, b) => a + b, 0) / total : 0;
+      const sd = total ? Math.sqrt(vals.reduce((a, x) => a + Math.pow(x - mean, 2), 0) / total) : 0;
+      chart.innerHTML = bellSVG(vals, mean, sd, Q.low, Q.high);
+      left.textContent = "";
       right.textContent = !total ? "" : sd < 0.8 ? "The room mostly agrees" : sd < 1.2 ? "Some spread in the room" : "The room is split";
     });
     return v;
   }
 
-  // Smooth bell curve across the 1–5 scale, fitted to the room's answers
-  // (centered on the average, widened by how spread out the answers are),
-  // with the room average marked on the curve.
-  function bellSVG(dist, mean, sd, choices, low, high) {
-    const W = 1600, H = 700, padL = 90, padR = 90, padT = 90, padB = 175;
-    const n = dist.length, total = dist.reduce((a, b) => a + b, 0);
-    const lo = 0.5, hi = n + 0.5;                     // a little tail past 1 and 5
+  // Smooth bell curve across the confidence scale, fitted to the room's
+  // answers. No numbers for the audience: just the two end labels, a faint
+  // dot for each team member's answer, and the room average marked on the curve.
+  function bellSVG(vals, mean, sd, low, high) {
+    const W = 1600, H = 640, padL = 110, padR = 110, padT = 90, padB = 130;
+    const total = vals.length;
+    const lo = 0.6, hi = 5.4;
     const X = (v) => padL + ((v - lo) / (hi - lo)) * (W - padL - padR);
     const base = H - padB, plotH = base - padT;
-    const s = Math.max(sd, 0.55);                      // keep a curve even if everyone agrees
+    const s = Math.max(sd, 0.45);
     const g = (v) => Math.exp(-0.5 * Math.pow((v - mean) / s, 2));
     const Y = (v) => base - g(v) * plotH;
 
-    let out = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Room confidence bell curve, average ${total ? mean.toFixed(1) : "none"} of ${n}">`;
-    out += `<defs><linearGradient id="bellFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d49c61" stop-opacity=".75"/><stop offset="1" stop-color="#d49c61" stop-opacity=".08"/></linearGradient></defs>`;
-
-    // scale: baseline, tick for each rating, vote counts under each
-    out += `<line x1="${padL}" x2="${W - padR}" y1="${base}" y2="${base}" stroke="rgba(255,255,255,.35)" stroke-width="3"/>`;
-    dist.forEach((c, k) => {
-      const x = X(k + 1);
-      out += `<line x1="${x}" x2="${x}" y1="${padT}" y2="${base}" stroke="rgba(255,255,255,.08)" stroke-width="2"/>`;
-      out += `<line x1="${x}" x2="${x}" y1="${base}" y2="${base + 14}" stroke="rgba(255,255,255,.5)" stroke-width="3"/>`;
-      out += `<text x="${x}" y="${base + 66}" text-anchor="middle" class="bc-l">${k + 1}</text>`;
-      out += `<text x="${x}" y="${base + 104}" text-anchor="middle" class="bc-n">${c} ${c === 1 ? "vote" : "votes"}</text>`;
-    });
-    if (low) out += `<text x="${X(1)}" y="${base + 152}" text-anchor="middle" class="bc-end">${low}</text>`;
-    if (high) out += `<text x="${X(n)}" y="${base + 152}" text-anchor="middle" class="bc-end">${high}</text>`;
-
+    let out = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Room confidence">`;
+    out += `<defs><linearGradient id="bellFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d49c61" stop-opacity=".75"/><stop offset="1" stop-color="#d49c61" stop-opacity=".08"/></linearGradient>
+      <linearGradient id="axisFill" x1="0" x2="1"><stop offset="0" stop-color="#8a8178"/><stop offset=".6" stop-color="#d49c61"/><stop offset="1" stop-color="#e9b27a"/></linearGradient></defs>`;
+    out += `<rect x="${X(1)}" y="${base - 5}" width="${X(5) - X(1)}" height="10" rx="5" fill="url(#axisFill)" opacity=".85"/>`;
+    out += `<text x="${X(1)}" y="${base + 62}" text-anchor="start" class="bc-end">${low || ""}</text>`;
+    out += `<text x="${X(5)}" y="${base + 62}" text-anchor="end" class="bc-end">${high || ""}</text>`;
     if (!total) return out + `<text x="${W / 2}" y="${base - plotH / 2}" text-anchor="middle" class="bc-n">No responses</text></svg>`;
 
-    // the curve
     const pts = [];
     for (let t = 0; t <= 160; t++) { const v = lo + ((hi - lo) * t) / 160; pts.push([X(v), Y(v)]); }
     const line = pts.map((p, k) => `${k ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
     out += `<path d="${line} L${X(hi)},${base} L${X(lo)},${base} Z" fill="url(#bellFill)" class="bellfill"/>`;
     out += `<path d="${line}" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" class="bellline"/>`;
-
-    // room average: line from the scale up to the curve, dot on the curve, label above
+    // each response as a small dot along the scale
+    vals.forEach((v, k) => { out += `<circle cx="${X(v).toFixed(1)}" cy="${base + 22 + (k % 3) * 9}" r="5" fill="#fff" opacity=".45" class="bellavg"/>`; });
     const mx = X(mean), my = Y(mean);
     out += `<line x1="${mx}" x2="${mx}" y1="${base}" y2="${my}" stroke="#d49c61" stroke-width="5" stroke-dasharray="14 10" class="bellavg"/>`;
     out += `<circle cx="${mx}" cy="${my}" r="17" fill="#d49c61" stroke="#181716" stroke-width="6" class="bellavg"/>`;
-    out += `<text x="${mx}" y="${my - 34}" text-anchor="middle" class="bc-avg bellavg">Room average ${mean.toFixed(1)}</text>`;
+    out += `<text x="${mx}" y="${my - 34}" text-anchor="middle" class="bc-avg bellavg">Room average</text>`;
     return out + "</svg>";
   }
 

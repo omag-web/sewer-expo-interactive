@@ -170,7 +170,7 @@ export const ROUNDS = [
   {
     title: "Yale",
     extra: true,                                        // spare video, only if there's time
-    video: { src: "video/Yale - Edit - Final.mp4" },    // file not uploaded yet
+    video: { src: "video/Yale - Edit - Final.mp4" },
     answers: { seen: ["Offset(s)", "Protruding taps"], serious: ["Fix it"] }
   }
 ];
