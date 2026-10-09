@@ -99,7 +99,7 @@ export const DECISIONS = [
 export const ROUND_QUESTIONS = [
   {
     id: "confidence",
-    q: "How confident are you?",
+    q: "How confident are you that you know what needs to be done?",
     scale: true,
     low: "Not sure at all",
     high: "Very confident",

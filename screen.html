@@ -559,7 +559,7 @@
       const mean = total ? dist.reduce((a, x, k) => a + x * (k + 1), 0) / total : 0;
       const sd = total ? Math.sqrt(dist.reduce((a, x, k) => a + x * Math.pow(k + 1 - mean, 2), 0) / total) : 0;
       chart.innerHTML = bellSVG(dist, mean, sd, Q.choices);
-      left.replaceChildren(el("b", null, total ? mean.toFixed(1) : "–"), document.createTextNode(" average confidence · "), el("b", null, String(total)), document.createTextNode(" responses"));
+      left.replaceChildren(el("b", null, total ? mean.toFixed(1) : "–"), document.createTextNode(" average confidence · "), el("b", null, String(total)), document.createTextNode(total === 1 ? " response" : " responses"));
       right.textContent = !total ? "" : sd < 0.8 ? "The room mostly agrees" : sd < 1.2 ? "Some spread in the room" : "The room is split";
     });
     return v;

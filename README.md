@@ -15,7 +15,7 @@ Static site (GitHub Pages) + the Expo Wall's existing Firebase project (`sewer-e
 ## Each video round
 
 1. Video plays on the screen
-2. **How confident are you?** 1–5, not scored → bell curve at the reveal
+2. **How confident are you that you know what needs to be done?** 1–5, not scored → bell curve at the reveal
 3. **What did you see?** pick all that apply → partial credit
 4. **How serious is it?** Watch it / Maintain it / Fix it / Act now
 5. **What would you do?** single pick
