@@ -120,6 +120,25 @@
   .bellline { stroke-dasharray: 4000; stroke-dashoffset: 4000; animation: draw 1.4s .5s ease forwards; }
   @keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
   @keyframes draw { to { stroke-dashoffset: 0; } }
+  /* After each vote: vertical bar graph of how the room answered */
+  .results .qtext { font-size: 5vh; }
+  .results .eyebrow { margin: 1vh 0 0; }
+  .vchart { flex: 1; min-height: 0; display: flex; align-items: stretch; gap: 1.6vw; padding: 2vh 1vw 0; }
+  .vcol { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; }
+  .vval { text-align: center; margin-bottom: .8vh; line-height: 1; }
+  .vval b { display: block; font-family: var(--cond); font-size: 5.4vh; }
+  .vval small { display: block; font-size: 2vh; color: var(--muted); font-weight: 600; margin-top: .3vh; }
+  .vtrack { flex: 1; width: 72%; display: flex; align-items: flex-end; background: rgba(255,255,255,.04); border-radius: 1vh 1vh 0 0; }
+  .vtrack i { display: block; width: 100%; height: 0; background: var(--c); border-radius: 1vh 1vh 0 0; transition: height 1s cubic-bezier(.2,.8,.2,1); }
+  .vlab { margin-top: 1.2vh; text-align: center; display: flex; flex-direction: column; align-items: center; gap: .4vh; min-height: 9vh; }
+  .vmark { font-family: var(--cond); font-weight: 700; font-size: 4vh; color: var(--c); line-height: 1; }
+  .vtxt { font-size: 2.5vh; font-weight: 700; line-height: 1.15; }
+  .vcol.wrong { opacity: .5; }
+  .vcol.right .vtrack { outline: .45vh solid var(--good); outline-offset: .4vh; }
+  .vcol.right .vtxt::after { content: " ✓"; color: var(--good); }
+  /* While voting, the choices show without any counts */
+  .voting .ch .ct, .voting .ch .fill { display: none; }
+
   /* Leaderboard: full screen, no top bar */
   body.full .top { display: none; }
   body.full .body { padding-top: 4vh; }
@@ -398,7 +417,7 @@
   function viewQuestion(i) {
     const v = view();
     const Q = QUESTIONS[i];
-    if (Q.scale) v.classList.add("scale-q");
+    v.classList.add(Q.scale ? "scale-q" : "voting");
     const top = el("div", "qtop");
     const ring = el("div", "ring");
     const C = 2 * Math.PI * 45;
@@ -425,19 +444,12 @@
     // live results: bars grow as answers come in
     updaters.push(() => {
       count.replaceChildren(el("b", null, `${answers.length}`), document.createTextNode(` of ${players.length} answered`));
-      if (!Q.scale) liveBars(items); // confidence stays hidden until the reveal
+      // answers stay hidden from the room until the vote closes
     });
     return v;
   }
 
-  function liveBars(items) {
-    const total = Math.max(1, answers.length);
-    items.forEach(({ fill, ct }, k) => {
-      const n = answers.filter((a) => (a.picks || []).includes(k)).length;
-      requestAnimationFrame(() => { fill.style.width = `${(n / total) * 100}%`; });
-      ct.textContent = n;
-    });
-  }
+
 
   // How each team did on this one question
   function teamAccuracy(i) {
@@ -452,16 +464,38 @@
   function viewReveal(i) {
     const Q = QUESTIONS[i];
     if (Q.scale) return viewBell(i);
-    const v = view();
-    const top = el("div", "qtop"); top.append(el("p", "qtext", Q.q));
-    const { grid, items } = choiceGrid(Q);
+    const v = view("results");
+    const top = el("div", "qtop");
+    top.append(el("p", "qtext", Q.q));
+    const sub = el("p", "eyebrow", Q.multi ? "How the room voted · % of players who picked each" : "How the room voted");
+    const chart = el("div", "vchart");
+    const cols = Q.choices.map((c, k) => {
+      const col = el("div", `vcol ${Q.answer.includes(k) ? "right" : "wrong"}`);
+      col.style.setProperty("--c", c.color);
+      const val = el("div", "vval"), track = el("div", "vtrack"), bar = el("i");
+      track.append(bar);
+      const lab = el("div", "vlab");
+      lab.append(el("span", "vmark", choiceMark(c, k)), el("span", "vtxt", c.label));
+      col.append(val, track, lab);
+      chart.append(col);
+      return { val, bar };
+    });
     const foot = el("div", "qfoot");
     const left = el("span", "explain", Q.explain || ""); const right = el("span");
     foot.append(left, right);
-    v.append(top, grid, foot);
-    items.forEach(({ d }, k) => d.classList.add(Q.answer.includes(k) ? "right" : "wrong"));
+    v.append(top, sub, chart, foot);
+    let drawn = false;
     updaters.push(() => {
-      liveBars(items);
+      const n = answers.length;
+      const counts = Q.choices.map((_, k) => answers.filter((a) => (a.picks || []).includes(k)).length);
+      const max = Math.max(1, ...counts);
+      cols.forEach(({ val, bar }, k) => {
+        const pct = n ? Math.round((counts[k] / n) * 100) : 0;
+        val.replaceChildren(el("b", null, `${pct}%`), el("small", null, `${counts[k]} ${counts[k] === 1 ? "vote" : "votes"}`));
+        const h = `${(counts[k] / max) * 100}%`;
+        if (drawn) bar.style.height = h; else setTimeout(() => { bar.style.height = h; }, 150 + k * 90);
+      });
+      drawn = true;
       const scoredAns = answers.filter((a) => a.frac != null);
       right.replaceChildren();
       if (scoredAns.length) {
