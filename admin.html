@@ -24,6 +24,18 @@
 
   /* live screen preview: the real screen page at 1920×1080, scaled to fit */
   .side { position: sticky; top: 16px; }
+  /* Desktop: app-style layout. Header never moves, the left column scrolls,
+     the right column (live screen + teams) stays put. */
+  @media (min-width: 901px) {
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; overflow: hidden; }
+    body > header { flex: none; }
+    body > main { flex: 1; min-height: 0; width: 100%; overflow-y: auto; }
+    body > main:has(#console:not([hidden])) { overflow: hidden; padding-bottom: 0; }
+    #console:not([hidden]) { height: 100%; align-items: stretch; }
+    #console > .stack:first-child { overflow-y: auto; min-height: 0; padding: 0 6px 20px 0; align-content: start; }
+    #console > .side { position: static; overflow-y: auto; min-height: 0; padding-bottom: 20px; align-content: start; }
+  }
   .pv { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid var(--edge); }
   .pv iframe { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; pointer-events: none; }
   .pv-open { font-family: var(--body); font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none; }
@@ -152,7 +164,7 @@
   import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import {
     onSnapshot, setDoc, updateDoc, deleteDoc, getDocs, query, where, doc, writeBatch,
-    serverTimestamp, arrayUnion, arrayRemove, increment
+    serverTimestamp, arrayUnion, arrayRemove, increment, collection
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, QUESTIONS, auth, db, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qShort, qLabel, scoredUpTo,
@@ -418,12 +430,17 @@
       await b.commit();
     }
   }
+  async function clearSignals() {
+    const sg = await getDocs(collection(db, "games", GAME.id, "signals"));
+    await commitInChunks(sg.docs.map((d) => d.ref), (b, r) => b.delete(r));
+  }
   $("resetScores").onclick = () => {
     if (!confirm("Zero every score and clear all answers? Players stay joined. Good for after a rehearsal.")) return;
     run(async () => {
       const a = await getDocs(answersCol);
       await commitInChunks(a.docs.map((d) => d.ref), (b, r) => b.delete(r));
       await commitInChunks(players.map((p) => doc(playersCol, p.id)), (b, r) => b.update(r, { score: 0, correct: 0, answered: 0, streak: 0, rank: null }));
+      await clearSignals();
       await setDoc(gameRef, freshGame());
       toast("Scores reset. Back in the lobby.");
     });
@@ -435,6 +452,7 @@
       await commitInChunks(a.docs.map((d) => d.ref), (b, r) => b.delete(r));
       const p = await getDocs(playersCol);
       await commitInChunks(p.docs.map((d) => d.ref), (b, r) => b.delete(r));
+      await clearSignals();
       await setDoc(gameRef, freshGame());
       toast("Game reset.");
     });
