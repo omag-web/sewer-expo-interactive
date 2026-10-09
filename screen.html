@@ -154,7 +154,9 @@
   /* Final */
   .final { flex: 1; display: grid; grid-template-rows: auto 1fr; gap: 3vh; text-align: center; }
   .winner { font-family: var(--cond); font-weight: 700; font-size: 4vh; color: var(--muted); }
-  .winner b { display: block; font-size: 11vh; line-height: 1; color: var(--tc); animation: pop .6s ease; }
+  .winner b { display: block; font-size: 15vh; line-height: 1; color: var(--tc); animation: pop .6s ease; margin: 1vh 0; }
+  .winner .win-sub { display: block; font-size: 3.4vh; color: var(--text); }
+  .final { padding-top: 2vh; }
   .podium { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2vw; align-items: end; padding: 0 6vw; }
   .pod { display: flex; flex-direction: column; align-items: center; gap: 1vh; animation: rise .6s ease both; }
   .pod .nm { font-family: var(--cond); font-size: 5vh; font-weight: 700; color: var(--tc); }
@@ -563,6 +565,7 @@
 
   function viewFinal() {
     const v = view("final");
+    document.body.classList.add("full");
     let sig = null;
     updaters.push(() => {
       const s = players.map((p) => `${p.id}:${p.score}:${p.team}`).join("|");
@@ -578,7 +581,8 @@
     const win = el("div", "winner");
     if (winners.length) {
       win.style.setProperty("--tc", winners[0].color);
-      win.append(document.createTextNode(winners.length > 1 ? "It's a tie!" : "Champions"), el("b", null, winners.map((t) => t.name).join(" & ")));
+      win.append(document.createTextNode(winners.length > 1 ? "It's a tie! Our winners are" : "Our winner is"), el("b", null, winners.map((t) => t.name).join(" & ")),
+        el("span", "win-sub", `${fmt(winners[0].value)} ${teamValueLabel()} · ${winners.reduce((n, t) => n + t.players, 0)} players`));
     } else win.append(el("b", null, "Thanks for playing!"));
     const pod = el("div", "podium");
     [1, 0, 2].forEach((k) => {

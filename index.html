@@ -508,7 +508,7 @@
     const s1 = el("div", "stat"); s1.append(el("b", null, fmt(me.score)), el("span", null, "you've added"));
     const s2 = el("div", "stat"); s2.append(el("b", null, `${me.correct || 0}/${done}`), el("span", null, "fully right"));
     stats.append(s1, s2);
-    v.append(stats, el("p", "note", final ? "Thanks for playing!" : /halftime/i.test(QUESTIONS[game.qIndex].standingsTitle) ? "Second half coming up…" : "Next video coming up…"));
+    v.append(stats, el("p", "note", final ? "Thanks for playing!" : /final/i.test(QUESTIONS[game.qIndex].standingsTitle) ? "And the winner is… eyes on the screen!" : /halftime/i.test(QUESTIONS[game.qIndex].standingsTitle) ? "Second half coming up…" : "Next video coming up…"));
     return v;
   }
 </script>

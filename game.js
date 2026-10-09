@@ -32,8 +32,8 @@ export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) =>
     low: t.low, high: t.high, explain: "",
     round: ri, roundTitle: r.title || `Video ${ri + 1}`, step: k, steps: ROUND_QUESTIONS.length,
     video: k === 0 ? r.video : null,
-    leaderboard: k === ROUND_QUESTIONS.length - 1 && STANDINGS_ROUNDS.includes(ri + 1), confIndex: -1,
-    standingsTitle: HALFTIME ? "Halftime standings" : `Standings after ${r.title || `Video ${ri + 1}`}`
+    leaderboard: k === ROUND_QUESTIONS.length - 1 && (STANDINGS_ROUNDS.includes(ri + 1) || ri === ROUNDS.length - 1), confIndex: -1,
+    standingsTitle: ri === ROUNDS.length - 1 ? "Final standings" : HALFTIME ? "Halftime standings" : `Standings after ${r.title || `Video ${ri + 1}`}`
   };
   const raw = r.answers ? r.answers[t.id] : undefined;
   const answer = [].concat(raw ?? []).map((a) => {
@@ -48,8 +48,8 @@ export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) =>
     explain: r.explain ? r.explain[t.id] : "",
     round: ri, roundTitle: r.title || `Video ${ri + 1}`, step: k, steps: ROUND_QUESTIONS.length,
     video: k === 0 ? r.video : null,
-    leaderboard: k === ROUND_QUESTIONS.length - 1 && STANDINGS_ROUNDS.includes(ri + 1),
-    standingsTitle: HALFTIME ? "Halftime standings" : `Standings after ${r.title || `Video ${ri + 1}`}`,
+    leaderboard: k === ROUND_QUESTIONS.length - 1 && (STANDINGS_ROUNDS.includes(ri + 1) || ri === ROUNDS.length - 1),
+    standingsTitle: ri === ROUNDS.length - 1 ? "Final standings" : HALFTIME ? "Halftime standings" : `Standings after ${r.title || `Video ${ri + 1}`}`,
     confIndex: confAt >= 0 && confAt < k ? base + confAt : -1
   };
 }));
@@ -124,7 +124,7 @@ export function prevStep(phase, qIndex) {
 }
 export function describeStep(s) {
   if (!s) return "Game over";
-  if (s.phase === "final") return "Final results";
+  if (s.phase === "final") return "Reveal the winner";
   if (s.phase === "lobby") return "Lobby";
   const Q = QUESTIONS[s.qIndex];
   const n = qShort(s.qIndex);
