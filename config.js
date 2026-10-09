@@ -28,7 +28,7 @@ export const GAME = {
 
   // Public URL of the player page (index.html), shown as a QR in the lobby.
   // Leave "" to auto-detect from wherever screen.html is hosted.
-  joinUrl: "",
+  joinUrl: "https://link.omag.org/what-lies-beneath",
 
   // Scoring (every player's points go to their team). Speed doesn't matter —
   // any answer locked in before the timer ends scores the same.

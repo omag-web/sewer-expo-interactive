@@ -9,7 +9,7 @@ Static site (GitHub Pages) + the Expo Wall's existing Firebase project (`sewer-e
 | Page | Who | What |
 |---|---|---|
 | `index.html` | Attendees' phones | Join (name + team), answer, see correct/incorrect, team standing. **Key** button shows the decision key anytime. |
-| `screen.html` | Projector / ProPresenter web view | Lobby with QR + decision key, videos, live answer bars, bell curve, team standings, finale. Click once to start (unlocks video sound). `F` = full screen, `C` = show cursor. |
+| `screen.html` | Projector / ProPresenter web view | Lobby with QR + decision key, videos, live answer bars, bell curve, team standings, finale. Click once to start (unlocks video sound). Full screen: corner button or `F`. Join link/QR: link.omag.org/what-lies-beneath |
 | `admin.html` | Presenter (or type **beneath** on the screen or player page) | Admin console: run of show, Next/Back (clicker keys work), live answers, team board, Redo this question, Reset scores, Reset game. Sign in with the Expo Wall moderator login. |
 
 ## Each video round

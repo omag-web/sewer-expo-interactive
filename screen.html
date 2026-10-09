@@ -13,8 +13,18 @@
 <style>
   /* Built for a 16:9 display; everything scales with the viewport. */
   html, body { height: 100%; overflow: hidden; }
-  body { font-size: 1.6vh; cursor: none; }
-  body.cursor { cursor: default; }
+  body { font-size: 1.6vh; }
+  /* small full-screen toggle, bottom-right corner */
+  #fsBtn {
+    position: fixed; right: 1.2vw; bottom: 1.6vh; z-index: 40;
+    width: 4.4vh; height: 4.4vh; min-width: 34px; min-height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--edge); border-radius: .8vh; cursor: pointer;
+    background: rgba(24,23,22,.7); color: var(--muted); opacity: .55; transition: opacity .2s, color .2s;
+  }
+  #fsBtn:hover, #fsBtn:focus-visible { opacity: 1; color: var(--text); }
+  #fsBtn svg { width: 55%; height: 55%; }
+  body.preview #fsBtn { display: none; }
   .stage { position: fixed; inset: 0; display: flex; flex-direction: column; }
   .top {
     display: flex; align-items: center; gap: 2vw; padding: 2vh 3vw;
@@ -40,7 +50,7 @@
   .join p { font-size: 2.8vh; color: var(--muted); margin: 0; line-height: 1.3; }
   #qr { background: #fff; padding: 1.4vh; border-radius: .6vh; width: 28vh; height: 28vh; flex: none; }
   #qr img, #qr canvas { width: 100% !important; height: 100% !important; display: block; }
-  .url { font-family: var(--cond); font-size: 3.4vh; font-weight: 700; color: var(--accent); word-break: break-all; }
+  .url { font-family: var(--cond); font-size: 2.6vh; font-weight: 700; color: var(--accent); white-space: nowrap; }
   .teamgrid { display: flex; flex-wrap: wrap; gap: 1vh .7vw; align-content: flex-start; max-height: 40vh; overflow: hidden; }
   .tchip { display: inline-flex; align-items: baseline; gap: .5vw; padding: .7vh .9vw; border-radius: .7vh; background: var(--panel); border-left: .7vh solid var(--tc); animation: pop .35s ease; }
   .tchip b { font-family: var(--cond); font-size: 3.4vh; line-height: 1; }
@@ -198,10 +208,16 @@
   </div>
   <div class="body" id="body"></div>
 </div>
+<button id="fsBtn" type="button" aria-label="Toggle full screen" title="Full screen (F)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path class="fs-in" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
+    <path class="fs-out" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" style="display:none"/>
+  </svg>
+</button>
 <div id="start">
   <h1 id="startTitle">What Lies Beneath</h1>
   <p>Click anywhere to start the display (enables video sound and full screen).</p>
-  <p style="font-size:2vh">Press F for full screen · C to show the cursor · type the admin code to open the console</p>
+  <p style="font-size:2vh">Press F or the corner button for full screen · type the admin code to open the console</p>
 </div>
 
 <script type="module">
@@ -236,6 +252,16 @@
   const body = $("body");
 
   // ── Start overlay / keys ─────────────────────────────
+  // corner full-screen button: icon flips between expand and exit
+  const toggleFs = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.().catch(() => {});
+  $("fsBtn").onclick = (e) => { e.stopPropagation(); toggleFs(); $("fsBtn").blur(); };
+  document.addEventListener("fullscreenchange", () => {
+    const on = !!document.fullscreenElement;
+    document.querySelector("#fsBtn .fs-in").style.display = on ? "none" : "";
+    document.querySelector("#fsBtn .fs-out").style.display = on ? "" : "none";
+    $("fsBtn").setAttribute("aria-label", on ? "Exit full screen" : "Enter full screen");
+  });
+
   if (!PREVIEW) $("start").onclick = () => {
     $("start").remove();
     document.documentElement.requestFullscreen?.().catch(() => {});
@@ -243,7 +269,6 @@
   };
   addEventListener("keydown", (e) => {
     if (e.key === "f" || e.key === "F") document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
-    if (e.key === "c" || e.key === "C") document.body.classList.toggle("cursor");
   });
 
   // ── Data ─────────────────────────────────────────────
