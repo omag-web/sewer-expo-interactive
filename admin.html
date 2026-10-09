@@ -22,8 +22,14 @@
   .err { color: var(--bad); font-weight: 600; min-height: 1.2em; margin: 0; }
   .muted { color: var(--muted); }
 
+  /* live screen preview: the real screen page at 1920×1080, scaled to fit */
+  .side { position: sticky; top: 16px; }
+  .pv { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid var(--edge); }
+  .pv iframe { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; pointer-events: none; }
+  .pv-open { font-family: var(--body); font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none; }
+  .pv-note { margin: 8px 0 0; color: var(--steel); font-size: 13px; }
   .layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 20px; align-items: start; }
-  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .side { position: static; } }
   .card { background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; padding: 18px; }
   .card h3 { font-family: var(--cond); font-size: 22px; margin: 0 0 12px; letter-spacing: .02em; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .card h3 small { font-family: var(--body); font-size: 14px; color: var(--muted); font-weight: 500; }
@@ -127,7 +133,12 @@
         <div class="qlist" id="qlist"></div>
       </div>
     </div>
-    <div class="stack">
+    <div class="stack side">
+      <div class="card">
+        <h3>Live screen <a class="pv-open" id="pvOpen" target="_blank" rel="noopener">Open full screen ↗</a></h3>
+        <div class="pv" id="pv"><iframe id="pvFrame" title="Live preview of the audience screen" tabindex="-1" scrolling="no"></iframe></div>
+        <p class="pv-note">Exactly what the room sees · muted</p>
+      </div>
       <div class="card">
         <h3>Teams <small id="teamMode"></small></h3>
         <div class="board" id="teamBoard"></div>
@@ -153,6 +164,14 @@
   $("gid").textContent = GAME.id;
   const emu = location.search.includes("emulator=1") ? "?emulator=1" : "";
   $("openScreen").href = "screen.html" + emu;
+  $("pvOpen").href = "screen.html" + emu;
+
+  // Live preview: load the screen page in preview mode and scale it to the card
+  function fitPreview() {
+    const w = $("pv").clientWidth;
+    if (w) $("pvFrame").style.transform = `scale(${w / 1920})`;
+  }
+  new ResizeObserver(fitPreview).observe($("pv"));
   $("teamMode").textContent = GAME.teamScoring === "total" ? "Ranked by total points" : "Ranked by average points";
 
   let game = null, players = [], answers = [], unsubs = [], ansUnsub = null, ansFor = null;
@@ -166,6 +185,8 @@
     $("tools").hidden = !isHost;
     $("adminBadge").hidden = !isHost;
     if (!isHost) { $("console").hidden = true; $("setup").hidden = true; return; }
+    if (!$("pvFrame").src) $("pvFrame").src = "screen.html?preview=1" + (emu ? "&emulator=1" : "");
+    setTimeout(fitPreview, 0);
     unsubs.push(onSnapshot(gameRef, (s) => {
       game = s.exists() ? s.data({ serverTimestamps: "estimate" }) : null;
       $("setup").hidden = !!game; $("console").hidden = !game;
