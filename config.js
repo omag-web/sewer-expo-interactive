@@ -114,7 +114,7 @@ export const ROUND_QUESTIONS = [
     id: "seen",
     q: "What did you see?",
     multi: true,
-    choices: ["Roots", "Offset(s)", "Crack", "Protruding taps", "Grease"]
+    choices: ["Roots", "Offset(s)", "Crack", "Protruding taps", "Grease", "Flow"]
   },
   {
     id: "serious",
