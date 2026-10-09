@@ -149,7 +149,7 @@
     <div class="nm" id="meName"></div>
     <div class="sc" id="meTeam"></div>
   </div>
-  <button class="keybtn" id="keyBtn" type="button">Key</button>
+  <button class="keybtn" id="keyBtn" type="button" hidden>Key</button>
 </header>
 <main id="main">
   <div class="view center"><p class="sub">Connecting…</p></div>
@@ -238,6 +238,10 @@
 
   function render() {
     if (!uid) return;
+    // Decision key button only while a question that uses it (How serious is it?) is up
+    const kq = game && ["question", "reveal"].includes(game.phase) ? QUESTIONS[game.qIndex] : null;
+    $("keyBtn").hidden = !(me && kq && kq.hasMeanings);
+    if ($("keyBtn").hidden) document.querySelectorAll(".sheet").forEach((s) => s.remove());
     $("me").hidden = !me;
     if (me) {
       const t = teamById(me.team);
@@ -338,7 +342,7 @@
   function viewLobby() {
     const v = el("div", "view center");
     v.append(el("div", "big-icon", "✅"), el("h2", null, "You're in!"), teamBadge(me.team),
-      el("p", "sub", "Hang tight — the game starts when the host kicks it off. Tap Key anytime to see what each decision means."));
+      el("p", "sub", "Hang tight — the game starts when the host kicks it off."));
     const change = el("button", "btn ghost", "Change name or team");
     change.onclick = () => swap(viewJoin(true), "edit");
     v.append(change);
