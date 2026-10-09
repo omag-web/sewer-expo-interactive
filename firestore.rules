@@ -11,9 +11,11 @@ service cloud.firestore {
     // ── Expo Showdown game ─────────────────────────────────────
     // Players sign in anonymously; the host signs in with the same
     // email/password account used on the wall's moderate page.
+    // Same moderator list as the wall's isMod(). If you paste this block under the
+    // wall rules, you can replace the body with: return isMod();
     function isGameHost() {
       return request.auth != null
-        && request.auth.token.firebase.sign_in_provider == 'password';
+        && request.auth.token.email in ['mburleson@omag.org', 'rmann@omag.org'];
     }
 
     function validName(n) {
@@ -59,6 +61,19 @@ service cloud.firestore {
               && request.resource.data.team is string && request.resource.data.team.size() <= 40
               && (!exists(/databases/$(database)/documents/games/$(gameId)) || gameDoc(gameId).phase == 'lobby'));
 
+        allow delete: if isGameHost();
+      }
+
+      // The screen notes when a video ends so the admin page can open the first question.
+      match /signals/{sigId} {
+        allow read: if true;
+        allow create, update: if request.auth != null
+          && request.resource.data.keys().hasOnly(['q', 'at'])
+          && request.resource.data.q is int
+          && sigId == 'video-' + string(request.resource.data.q)
+          && request.resource.data.at == request.time
+          && gameDoc(gameId).phase == 'video'
+          && gameDoc(gameId).qIndex == request.resource.data.q;
         allow delete: if isGameHost();
       }
 

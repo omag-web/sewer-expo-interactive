@@ -63,11 +63,6 @@
   .brow { display: grid; grid-template-columns: 30px 14px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 6px; background: var(--panel2); }
   .brow .rk { font-family: var(--cond); font-weight: 700; color: var(--muted); }
   .brow .sc { font-weight: 700; color: var(--accent); }
-  .roster { display: grid; gap: 4px; max-height: 360px; overflow: auto; }
-  .prow { display: grid; grid-template-columns: 14px 1fr auto auto; gap: 8px; align-items: center; padding: 5px 8px; border-radius: 6px; background: var(--panel2); font-size: 15px; }
-  .prow .x { background: none; border: 0; color: var(--steel); cursor: pointer; font-size: 18px; padding: 0 4px; line-height: 1; }
-  .prow .x:hover { color: var(--bad); }
-  .filter { margin-bottom: 8px; font-size: 16px !important; padding: 8px 12px !important; }
   .timer { font-family: var(--cond); font-size: 40px; font-weight: 700; color: var(--accent); }
   .timer.low { color: var(--bad); }
   .keys { color: var(--steel); font-size: 13px; margin: 8px 0 0; }
@@ -137,11 +132,6 @@
         <h3>Teams <small id="teamMode"></small></h3>
         <div class="board" id="teamBoard"></div>
       </div>
-      <div class="card">
-        <h3>Roster <small>✕ removes a player</small></h3>
-        <input type="text" class="filter" id="filter" placeholder="Filter names">
-        <div class="roster" id="roster"></div>
-      </div>
     </div>
   </div>
 </main>
@@ -155,7 +145,7 @@
   import {
     GAME, QUESTIONS, auth, db, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qShort, qLabel, scoredUpTo,
     teamById, stepsFor, nextStep, prevStep, describeStep, pointsFor, grade, rankPlayers, teamStandings,
-    teamValueLabel, remainingMs, timeLimitFor, fmt, explainError
+    teamValueLabel, remainingMs, timeLimitFor, fmt, explainError, videoSignalRef, fmtClock
   } from "./game.js";
 
   setLogo($("logo"));
@@ -179,7 +169,7 @@
     unsubs.push(onSnapshot(gameRef, (s) => {
       game = s.exists() ? s.data({ serverTimestamps: "estimate" }) : null;
       $("setup").hidden = !!game; $("console").hidden = !game;
-      watchAnswers(); render();
+      watchAnswers(); watchVideo(); render();
     }, fail));
     unsubs.push(onSnapshot(playersCol, (s) => {
       players = s.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -248,7 +238,45 @@
       // jumped straight to a reveal for a question never opened: open it instead
       return goTo({ phase: "question", qIndex: s.qIndex });
     }
+    if (s.phase === "video") {
+      const b = writeBatch(db);
+      b.delete(videoSignalRef(s.qIndex));
+      b.update(gameRef, { phase: "video", qIndex: s.qIndex, updatedAt: serverTimestamp() });
+      return b.commit();
+    }
     return updateDoc(gameRef, { phase: s.phase, qIndex: s.qIndex, updatedAt: serverTimestamp() });
+  }
+
+  // ── Video → first question, automatically ─────────────
+  // The screen leaves a note when the video ends; this page then opens the question.
+  // Backup: if no note arrives (screen closed, video blocked), it opens anyway
+  // once the video's length plus 20 seconds has passed.
+  let sigUnsub = null, sigFor = null, backup = null;
+  function watchVideo() {
+    const key = game && game.phase === "video" ? game.qIndex : null;
+    if (key === sigFor) return;
+    if (sigUnsub) sigUnsub(); sigUnsub = null; clearTimeout(backup); backup = null; sigFor = key;
+    if (key == null) return;
+    const q = key;
+    const advance = () => {
+      clearTimeout(backup);
+      if (game.phase === "video" && game.qIndex === q) run(() => goTo(nextStep("video", q)));
+    };
+    sigUnsub = onSnapshot(videoSignalRef(q), (s) => { if (s.exists()) advance(); }, () => {});
+    videoLength(QUESTIONS[q].video).then((sec) => {
+      if (sec && sigFor === q) backup = setTimeout(advance, (sec + 20) * 1000);
+    });
+  }
+  function videoLength(v) {
+    if (!v) return Promise.resolve(0);
+    if (v.youtube) return Promise.resolve(v.end ? v.end - (v.start || 0) : 0);
+    return new Promise((res) => {
+      const m = document.createElement("video");
+      m.preload = "metadata"; m.muted = true;
+      m.onloadedmetadata = () => res(isFinite(m.duration) ? m.duration : 0);
+      m.onerror = () => res(0);
+      m.src = encodeURI(v.src);
+    });
   }
 
   $("next").onclick = () => run(() => goTo(nextStep(game.phase, game.qIndex)));
@@ -398,7 +426,7 @@
       `${qShort(qIndex)} · ${{ video: "Video", question: "Answering", reveal: "Reveal", leaderboard: "Standings" }[phase]}`;
     $("phase").textContent = label;
     $("phaseMeta").textContent = phase === "lobby" ? "Players are joining" :
-      phase === "video" ? "Video is playing on the screen — open the question when it ends" :
+      phase === "video" ? "Video is playing on the screen — the first question opens by itself when it ends" :
       phase === "question" ? `Phones are live · ${QUESTIONS[qIndex].q}` : phase === "final" ? "Game over" : qLabel(qIndex);
     $("kPlayers").textContent = players.length;
     $("kAnswers").textContent = ["question", "reveal"].includes(phase) ? `${answers.length}` : "–";
@@ -422,8 +450,8 @@
     t.hidden = false;
     const upd = () => {
       const r = remainingMs(game);
-      t.textContent = Math.ceil(r / 1000) + "s";
-      t.classList.toggle("low", r <= 5000);
+      t.textContent = fmtClock(r);
+      t.classList.toggle("low", r <= 15000);
       const everyone = players.length > 0 && answers.length >= players.length;
       if (GAME.autoReveal && !busy && (r <= 0 || everyone) && !autoTimer) {
         const q = game.qIndex;
@@ -446,7 +474,7 @@
     const total = Math.max(1, answers.length);
     box.replaceChildren();
     const tags = el("div");
-    tags.append(el("span", "tag", `${timeLimitFor(i)}s`));
+    tags.append(el("span", "tag", fmtClock(timeLimitFor(i) * 1000)));
     if (Q.multi) tags.append(el("span", "tag", "Pick all that apply"));
     if (Q.scale) tags.append(el("span", "tag", "Confidence poll · not scored"));
     if (Q.video) tags.append(el("span", "tag", Q.video.youtube ? "YouTube video" : "Video"));
@@ -485,19 +513,7 @@
       r.append(el("span", "rk", `#${t.rank}`), d, el("span", null, `${t.name} (${t.players})`), el("span", "sc", `${fmt(t.value)} ${teamValueLabel()}`));
       tb.append(r);
     });
-    const f = $("filter").value.trim().toLowerCase();
-    const ro = $("roster"); ro.replaceChildren();
-    const answered = new Set(answers.map((a) => a.uid));
-    [...players].sort((a, b) => a.name.localeCompare(b.name)).filter((p) => !f || p.name.toLowerCase().includes(f)).forEach((p) => {
-      const r = el("div", "prow");
-      const d = el("span", "team-dot"); d.style.background = teamById(p.team).color;
-      const x = el("button", "x", "✕"); x.title = `Remove ${p.name}`;
-      x.onclick = () => { if (confirm(`Remove ${p.name}? They can rejoin from their phone.`)) run(() => deleteDoc(doc(playersCol, p.id))); };
-      r.append(d, el("span", null, p.name), el("span", "muted", game.phase === "question" ? (answered.has(p.id) ? "✓" : "…") : fmt(p.score)), x);
-      ro.append(r);
-    });
   }
-  $("filter").oninput = () => renderBoards();
 </script>
 </body>
 </html>

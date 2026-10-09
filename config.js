@@ -32,7 +32,7 @@ export const GAME = {
 
   // Scoring (every player's points go to their team). Speed doesn't matter —
   // any answer locked in before the timer ends scores the same.
-  defaultTimeLimit: 20,   // seconds per question unless the question sets its own
+  defaultTimeLimit: 120,  // seconds per question (2 min for table discussion); a question can set its own "time"
   basePoints: 100,        // for a correct answer
   streakBonus: 0,         // optional: extra points per fully-correct answer in a row (0 = off)
   streakBonusMax: 0,      // ...capped here
@@ -90,13 +90,12 @@ export const DECISIONS = [
 // The questions asked after EVERY video, in order.
 //   multi: true   → pick all that apply (partial credit)
 //   scale: true   → 1–5 rating, not scored; the reveal shows a bell curve
-//   time          → seconds for this question
+//   time          → optional seconds for just this question (default: GAME.defaultTimeLimit)
 export const ROUND_QUESTIONS = [
   {
     id: "confidence",
     q: "How confident are you?",
     scale: true,
-    time: 15,
     low: "Not sure at all",
     high: "Very confident",
     choices: ["1", "2", "3", "4", "5"]
@@ -105,19 +104,16 @@ export const ROUND_QUESTIONS = [
     id: "seen",
     q: "What did you see?",
     multi: true,
-    time: 30,
     choices: ["Roots", "Offset(s)", "Crack", "Infiltration", "Collapse", "Protruding taps", "Grease"]
   },
   {
     id: "serious",
     q: "How serious is it?",
-    time: 20,
     choices: DECISIONS
   },
   {
     id: "action",
     q: "What would you do?",
-    time: 20,
     choices: ["Clean", "Root removal", "Point repair", "Replace line", "Investigate further", "No action"]
   }
 ];

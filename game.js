@@ -61,6 +61,10 @@ export const gameRef = doc(db, "games", GAME.id);
 export const playersCol = collection(db, "games", GAME.id, "players");
 export const answersCol = collection(db, "games", GAME.id, "answers");
 export const answerId = (uid, q) => `${uid}_${q}`;
+// The screen drops a note here when a video finishes, so the admin page can open the first question.
+export const videoSignalRef = (q) => doc(db, "games", GAME.id, "signals", `video-${q}`);
+// 125000 → "2:05"
+export const fmtClock = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
 
 export const $ = (id) => document.getElementById(id);
 export const LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];

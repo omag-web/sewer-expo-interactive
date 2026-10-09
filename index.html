@@ -129,7 +129,7 @@
   import { doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, auth, db, gameRef, answerId, $, el, setLogo, choiceMark, qLabel,
-    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError, enableAdminShortcut
+    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError, enableAdminShortcut, fmtClock
   } from "./game.js";
   enableAdminShortcut();
 
@@ -330,6 +330,7 @@
     v.append(head, bar, el("p", "qtext", Q.q));
     if (Q.multi) v.append(el("p", "qhint", "Pick all that apply, then lock in"));
     if (Q.scale) v.append(el("p", "qhint", GAME.confidenceWager ? "Your confidence raises or lowers your points for this video" : "About what you just saw in the video"));
+    v.append(el("p", "note", "Talk it over with your table — you can change picks until you lock in."));
 
     const locked = picksNow();
     const list = el("div", Q.scale ? "choices scale" : "choices");
@@ -362,8 +363,8 @@
     const limit = (game.timeLimit || timeLimitFor(i)) * 1000;
     const update = () => {
       const r = remainingMs(game);
-      timer.textContent = Math.ceil(r / 1000);
-      timer.classList.toggle("low", r <= 5000);
+      timer.textContent = fmtClock(r);
+      timer.classList.toggle("low", r <= 15000);
       fill.style.transform = `scaleX(${Math.min(1, r / limit)})`;
       if (r <= 0) {
         clearInterval(tick); tick = null;

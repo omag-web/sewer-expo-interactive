@@ -68,7 +68,7 @@
   .ring .bg { stroke: var(--panel2); }
   .ring .fg { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset .25s linear, stroke .3s; }
   .ring.low .fg { stroke: var(--bad); }
-  .ring .num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--cond); font-weight: 700; font-size: 7vh; }
+  .ring .num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--cond); font-weight: 700; font-size: 5vh; }
   .grid4 { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2vh 1.6vw; margin-top: 4vh; align-content: stretch; }
   .grid4.n2 { grid-template-rows: 1fr; } .grid4.n3, .grid4.n4 { grid-template-rows: 1fr 1fr; }
   .ch {
@@ -183,8 +183,15 @@
   import { onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qLabel,
-    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut
+    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut, fmtClock, videoSignalRef, auth
   } from "./game.js";
+  import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  // the screen signs in quietly so it can tell the admin page a video has ended
+  onAuthStateChanged(auth, (u) => { if (!u) signInAnonymously(auth).catch((e) => console.warn("screen sign-in", e)); });
+  function videoEnded(q) {
+    setDoc(videoSignalRef(q), { q, at: serverTimestamp() }).catch((e) => console.warn("video signal", e));
+  }
   enableAdminShortcut();
 
   setLogo($("logo"));
@@ -309,8 +316,10 @@
       r.append(el("p", "eyebrow", Q.roundTitle), el("h1", null, "Get ready!"), el("p", null, `Grab your phone — first up: ${Q.q}`));
       wrap.append(r);
     };
+    const ended = () => { ready(); videoEnded(i); };
     const failed = (msg) => {
       ready();
+      setTimeout(() => videoEnded(i), 5000); // don't stall the room on a broken video
       wrap.querySelector(".vready p:last-child").textContent = msg;
       wrap.querySelector(".vready p:last-child").classList.add("verr");
     };
@@ -324,14 +333,14 @@
           playerVars: { autoplay: 1, controls: 0, rel: 0, modestbranding: 1, playsinline: 1, start: spec.start || 0, ...(spec.end ? { end: spec.end } : {}) },
           events: {
             onReady: (e) => e.target.playVideo(),
-            onStateChange: (e) => { if (e.data === YT.PlayerState.ENDED) ready(); },
+            onStateChange: (e) => { if (e.data === YT.PlayerState.ENDED) ended(); },
             onError: () => failed("Video couldn't play. Host can open the question.")
           }
         });
       }).catch(() => failed("YouTube didn't load. Host can open the question."));
     } else if (spec.src) {
       const vid = el("video"); vid.src = encodeURI(spec.src); vid.playsInline = true; vid.preload = "auto";
-      vid.onended = ready;
+      vid.onended = ended;
       vid.onerror = () => failed(`Couldn't load ${spec.src}. Host can open the question.`);
       wrap.append(vid);
       vid.play().catch(() => {
@@ -394,9 +403,9 @@
     const limit = (game.timeLimit || timeLimitFor(i)) * 1000;
     const tickFn = () => {
       const r = remainingMs(game);
-      num.textContent = Math.ceil(r / 1000);
+      num.textContent = fmtClock(r);
       fg.style.strokeDashoffset = String(C * (1 - r / limit));
-      ring.classList.toggle("low", r <= 5000);
+      ring.classList.toggle("low", r <= 15000);
       if (r <= 0) { hint.textContent = "Time's up!"; clearInterval(tick); tick = null; }
     };
     tickFn(); tick = setInterval(tickFn, 250);
