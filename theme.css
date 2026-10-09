@@ -20,6 +20,7 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+html { background: var(--base); }
 body {
   font-family: var(--body);
   background: var(--base);
@@ -28,8 +29,19 @@ body {
   min-height: 100dvh;
   -webkit-text-size-adjust: 100%;
 }
+/* Faint sewer photo behind every page */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    linear-gradient(rgba(24,23,22,.55), rgba(24,23,22,.78)),
+    url("images/expo-sewer-bg-sm.jpg") center / cover no-repeat;
+  opacity: .55;
+}
+@media (min-width: 1000px) {
+  body::before { background-image: linear-gradient(rgba(24,23,22,.55), rgba(24,23,22,.78)), url("images/expo-sewer-bg.jpg"); }
+}
 .grid-bg {
-  background-color: var(--base);
+  background-color: transparent;
   background-image:
     linear-gradient(rgba(212,156,97,.10) 1px, transparent 1px),
     linear-gradient(90deg, rgba(212,156,97,.10) 1px, transparent 1px);
