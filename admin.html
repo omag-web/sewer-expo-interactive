@@ -112,6 +112,51 @@
   .modal .m-actions .btn { min-height: 44px; font-size: 18px; padding: 8px 18px; }
   .modal .btn.solid-danger { background: var(--bad); color: #fff; }
   @keyframes fade { from { opacity: 0; } }
+  /* Results report */
+  .report-card .btn { width: 100%; }
+  .report-back { position: fixed; inset: 0; z-index: 90; background: rgba(10,9,8,.8); backdrop-filter: blur(3px); display: flex; justify-content: center; padding: 24px; animation: fade .15s ease; }
+  .report { width: 100%; max-width: 1180px; background: var(--base); border: 1px solid var(--edge); border-top: 4px solid var(--accent); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+  .rp-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--edge); flex-wrap: wrap; }
+  .rp-head h2 { font-family: var(--cond); font-size: 32px; margin: 0; flex: 1; line-height: 1; }
+  .rp-head .btn { min-height: 40px; font-size: 17px; padding: 6px 14px; }
+  .rp-body { overflow-y: auto; padding: 18px 20px 30px; display: grid; gap: 22px; }
+  .rp-sec h3 { font-family: var(--cond); font-size: 24px; margin: 0 0 10px; }
+  .rp-note { color: var(--muted); font-size: 14px; margin: -4px 0 10px; }
+  .rp-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+  .rp-kpi { background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; padding: 12px 14px; }
+  .rp-kpi b { display: block; font-family: var(--cond); font-size: 34px; line-height: 1; color: var(--accent); }
+  .rp-kpi span { color: var(--muted); font-size: 14px; font-weight: 600; }
+  .rp-hic { display: grid; gap: 8px; }
+  .rp-hic div { background: color-mix(in srgb, var(--bad) 12%, var(--panel)); border-left: 5px solid var(--bad); border-radius: 8px; padding: 10px 14px; line-height: 1.4; }
+  .rp-hic b { color: var(--text); }
+  .rp-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .rp-table th { text-align: left; color: var(--muted); font-weight: 600; font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--edge); position: sticky; top: 0; background: var(--base); }
+  .rp-table td { padding: 7px 8px; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .rp-table td.n, .rp-table th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .rp-table .team-dot { margin-right: 8px; vertical-align: middle; }
+  .rp-round { background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; padding: 14px 16px; }
+  .rp-round h4 { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 10px; font-family: var(--cond); font-size: 22px; color: var(--accent); text-transform: uppercase; letter-spacing: .03em; }
+  .rp-round h4 small { font-family: var(--body); text-transform: none; letter-spacing: 0; color: var(--muted); font-size: 14px; font-weight: 600; }
+  .rp-q { padding: 10px 0; border-top: 1px solid var(--edge); }
+  .rp-q:first-of-type { border-top: 0; }
+  .rp-qh { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 8px; }
+  .rp-qh b { font-size: 16px; }
+  .rp-qh span { color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .rp-score { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--panel2); margin-bottom: 8px; }
+  .rp-score i { display: block; height: 100%; }
+  .rp-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .rp-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .rp-bars { display: grid; gap: 4px; }
+  .rp-bar { display: grid; grid-template-columns: 190px 1fr 74px; gap: 10px; align-items: center; font-size: 14px; }
+  .rp-bar .lab { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rp-bar .lab.ok::after { content: " ✓"; color: var(--good); font-weight: 700; }
+  .rp-bar .trk { height: 14px; background: var(--panel2); border-radius: 3px; overflow: hidden; }
+  .rp-bar .trk i { display: block; height: 100%; background: var(--c); opacity: .9; }
+  .rp-bar .lab.bad, .rp-bar .lab.bad + .trk + .v { color: var(--bad); }
+  .rp-bar .v { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .rp-flag { margin-top: 8px; font-size: 14px; color: var(--muted); }
+  .rp-flag b { color: var(--text); }
+  .rp-empty { color: var(--muted); font-style: italic; }
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--panel2); border: 1px solid var(--edge); padding: 10px 18px; border-radius: 8px; font-weight: 600; z-index: 10; }
 </style>
 </head>
@@ -169,6 +214,10 @@
       <div class="card">
         <h3>Run of show <small>Click to jump</small></h3>
         <div class="qlist" id="qlist"></div>
+      </div>
+      <div class="card report-card">
+        <h3>Results report <small>Team scores and how every question went</small></h3>
+        <button class="btn" id="openReport" type="button">📊 Open results report</button>
       </div>
     </div>
     <div class="stack side">
@@ -420,7 +469,7 @@
       const a = byUid.get(p.id);
       const g = grade(Q, a ? a.picks : []);
       const elapsed = a && a.at ? a.at.toMillis() - opened : limit * 1000;
-      const pts = a ? pointsFor({ frac: g.frac, exact: g.exact, elapsedMs: elapsed, limitSec: limit, streakBefore: p.streak || 0, conf: conf.get(p.id) }) : 0;
+      const pts = a ? pointsFor({ units: g.units, exact: g.exact, streakBefore: p.streak || 0, conf: conf.get(p.id) }) : 0;
       if (a) a.result = { correct: g.exact, frac: g.frac, points: pts };
       return {
         id: p.id, name: p.name, team: p.team,
@@ -482,12 +531,203 @@
     });
   };
 
+  // ── Results report ──────────────────────────────────
+  // Pulls every answer and shows team scores plus how each question went,
+  // so you can spot where understanding broke down. Read-only.
+  const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+  const csvCell = (v) => { const t = String(v ?? ""); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+
+  async function buildReport() {
+    const snap = await getDocs(answersCol);
+    const all = snap.docs.map((d) => d.data());
+    const byQ = new Map();
+    all.forEach((a) => { if (!byQ.has(a.q)) byQ.set(a.q, []); byQ.get(a.q).push(a); });
+
+    const qs = QUESTIONS.map((Q, i) => {
+      const list = byQ.get(i) || [];
+      const n = list.length;
+      const counts = Q.choices.map((_, k) => list.filter((a) => (a.picks || []).includes(k)).length);
+      const r = { Q, i, n, counts };
+      if (Q.scale) {
+        const sum = list.reduce((t, a) => t + ((a.picks || [])[0] + 1), 0);
+        r.avg = n ? sum / n : null;
+      } else if (!Q.noKey) {
+        const gs = list.map((a) => grade(Q, a.picks));
+        r.full = gs.filter((g) => g.exact).length;
+        r.part = gs.filter((g) => g.units > 0 && !g.exact).length;
+        r.zero = n - r.full - r.part;
+        r.spoiled = gs.filter((g) => g.hits > 0 && g.wrong > 0).length;   // had the right one, but also a wrong one
+        const wrongPicks = Q.choices.map((_, k) => (Q.answer.includes(k) ? -1 : counts[k]));
+        const w = Math.max(...wrongPicks);
+        r.topWrong = w > 0 ? { k: wrongPicks.indexOf(w), count: w } : null;
+        if (Q.multi) {
+          const missed = Q.answer.map((k) => ({ k, count: n - counts[k] })).sort((a, b) => b.count - a.count)[0];
+          r.topMissed = missed && missed.count > 0 ? missed : null;
+        }
+      }
+      return r;
+    });
+
+    // team table, with each team's share of fully-correct scored answers
+    const teams = teamStandings(players).map((t) => {
+      const mine = all.filter((a) => a.team === t.id && QUESTIONS[a.q] && !QUESTIONS[a.q].unscored);
+      const full = mine.filter((a) => grade(QUESTIONS[a.q], a.picks).exact).length;
+      return { ...t, answered: mine.length, full };
+    });
+
+    const scored = qs.filter((r) => !r.Q.unscored && r.n);
+    const hiccups = [...scored].sort((a, b) => pct(a.full, a.n) - pct(b.full, b.n)).slice(0, 3);
+    return { qs, teams, scored, hiccups, totalAnswers: all.length };
+  }
+
+  function choiceName(c) { return (c.emoji ? c.emoji + " " : "") + c.label; }
+
+  async function openReport() {
+    const back = el("div", "report-back");
+    const panel = el("div", "report");
+    const head = el("div", "rp-head");
+    head.append(el("h2", null, "Results report"));
+    const refresh = el("button", "btn ghost", "↻ Refresh"); refresh.type = "button";
+    const csv = el("button", "btn ghost", "⬇ Download CSV"); csv.type = "button";
+    const close = el("button", "btn", "Close"); close.type = "button";
+    head.append(refresh, csv, close);
+    const body = el("div", "rp-body");
+    body.append(el("p", "rp-empty", "Loading answers…"));
+    panel.append(head, body); back.append(panel); document.body.append(back);
+    const shut = () => { back.remove(); removeEventListener("keydown", onKey, true); };
+    const onKey = (e) => { if (e.key === "Escape") { e.preventDefault(); shut(); } e.stopPropagation(); };
+    addEventListener("keydown", onKey, true);
+    close.onclick = shut;
+    back.onclick = (e) => { if (e.target === back) shut(); };
+
+    let data = null;
+    const draw = async () => {
+      body.replaceChildren(el("p", "rp-empty", "Loading answers…"));
+      try { data = await buildReport(); } catch (x) { fail(x); body.replaceChildren(el("p", "rp-empty", "Couldn't load answers.")); return; }
+      body.replaceChildren(...renderReport(data));
+    };
+    refresh.onclick = draw;
+    csv.onclick = () => { if (data) downloadCsv(data); };
+    draw();
+  }
+  $("openReport").onclick = openReport;
+
+  function renderReport({ qs, teams, scored, hiccups, totalAnswers }) {
+    const out = [];
+
+    // headline numbers
+    const kp = el("div", "rp-kpis");
+    const allFull = scored.reduce((t, r) => t + r.full, 0), allN = scored.reduce((t, r) => t + r.n, 0);
+    const confs = qs.filter((r) => r.Q.scale && r.avg != null);
+    [[players.length, "players"], [teams.length, "teams playing"], [totalAnswers, "answers recorded"],
+     [`${pct(allFull, allN)}%`, "of scored answers fully right"],
+     [confs.length ? (confs.reduce((t, r) => t + r.avg, 0) / confs.length).toFixed(1) : "–", "average team confidence (1–5)"]]
+      .forEach(([v, l]) => { const d = el("div", "rp-kpi"); d.append(el("b", null, String(v)), el("span", null, l)); kp.append(d); });
+    out.push(kp);
+
+    // where people struggled
+    const hs = el("div", "rp-sec");
+    hs.append(el("h3", null, "Where people struggled"));
+    if (!hiccups.length) hs.append(el("p", "rp-empty", "No scored answers yet."));
+    else {
+      const box = el("div", "rp-hic");
+      hiccups.forEach((r) => {
+        const d = el("div");
+        let html = `<b>${esc(r.Q.roundTitle)} · ${esc(r.Q.q)}</b> — only ${pct(r.full, r.n)}% fully right.`;
+        if (r.topWrong) html += ` Most common wrong pick: <b>${esc(choiceName(r.Q.choices[r.topWrong.k]))}</b> (${pct(r.topWrong.count, r.n)}%).`;
+        if (r.topMissed) html += ` Most missed: <b>${esc(choiceName(r.Q.choices[r.topMissed.k]))}</b> (${pct(r.topMissed.count, r.n)}% didn't pick it).`;
+        d.innerHTML = html; box.append(d);
+      });
+      hs.append(box);
+    }
+    out.push(hs);
+
+    // team scores
+    const ts = el("div", "rp-sec");
+    ts.append(el("h3", null, "Team scores"), el("p", "rp-note", GAME.teamScoring === "total" ? "Ranked by total points." : "Ranked by average points per player."));
+    if (!teams.length) ts.append(el("p", "rp-empty", "No teams yet."));
+    else {
+      const t = el("table", "rp-table");
+      t.innerHTML = "<thead><tr><th>#</th><th>Team</th><th class='n'>Players</th><th class='n'>Total pts</th><th class='n'>Avg pts</th><th class='n'>Fully right</th></tr></thead>";
+      const tb = el("tbody");
+      teams.forEach((x) => {
+        const tr = el("tr");
+        tr.innerHTML = `<td>${x.rank}</td><td><span class="team-dot" style="background:${x.color}"></span>${esc(x.name)}</td><td class="n">${x.players}</td><td class="n">${fmt(x.total)}</td><td class="n">${fmt(x.avg)}</td><td class="n">${pct(x.full, x.answered)}%</td>`;
+        tb.append(tr);
+      });
+      t.append(tb); ts.append(t);
+    }
+    out.push(ts);
+
+    // question by question, grouped by video
+    const qsSec = el("div", "rp-sec");
+    qsSec.append(el("h3", null, "Question by question"), el("p", "rp-note", "Bars show the share of players who picked each answer (✓ = correct). Pick-all questions can add up to more than 100%."));
+    [...new Set(qs.map((r) => r.Q.round))].forEach((rd) => {
+      const rows = qs.filter((r) => r.Q.round === rd);
+      const box = el("div", "rp-round");
+      const conf = rows.find((r) => r.Q.scale);
+      const h = el("h4"); h.append(document.createTextNode(rows[0].Q.roundTitle), el("small", null, conf && conf.avg != null ? `Team confidence ${conf.avg.toFixed(1)} / 5` : "Not played yet"));
+      box.append(h);
+      rows.forEach((r) => {
+        const q = el("div", "rp-q");
+        const qh = el("div", "rp-qh");
+        const tag = r.Q.scale ? "" : r.Q.noKey ? " · not scored" : "";
+        qh.append(el("b", null, `Q${r.Q.step + 1} · ${r.Q.q}`), el("span", null, r.n ? `${r.n} answered${tag}` : "no answers"));
+        q.append(qh);
+        if (!r.n) { box.append(q); return; }
+        if (!r.Q.unscored) {
+          const sb = el("div", "rp-score");
+          [[r.full, "var(--good)"], [r.part, "var(--a0)"], [r.zero, "var(--bad)"]].forEach(([v, c]) => { const i2 = el("i"); i2.style.cssText = `width:${pct(v, r.n)}%;background:${c}`; sb.append(i2); });
+          const lg = el("div", "rp-legend");
+          lg.innerHTML = `<span><i style="background:var(--good)"></i>Fully right ${pct(r.full, r.n)}%</span>` +
+            (r.Q.multi ? `<span><i style="background:var(--a0)"></i>Partly right ${pct(r.part, r.n)}%</span>` : "") +
+            `<span><i style="background:var(--bad)"></i>No points ${pct(r.zero, r.n)}%</span>` +
+            (r.spoiled ? `<span>${r.spoiled} had the right answer but added a wrong one</span>` : "");
+          q.append(sb, lg);
+        }
+        const bars = el("div", "rp-bars");
+        r.Q.choices.forEach((c, k) => {
+          const b = el("div", "rp-bar"); b.style.setProperty("--c", c.color);
+          const isAns = !r.Q.unscored && r.Q.answer.includes(k);
+          const isBadTop = r.topWrong && r.topWrong.k === k;
+          const label = r.Q.scale ? `${c.label}${k === 0 ? ` · ${r.Q.low}` : k === r.Q.choices.length - 1 ? ` · ${r.Q.high}` : ""}` : choiceName(c);
+          b.append(el("span", `lab${isAns ? " ok" : isBadTop ? " bad" : ""}`, label));
+          const trk = el("div", "trk"); const f = el("i"); f.style.width = `${pct(r.counts[k], r.n)}%`; trk.append(f);
+          b.append(trk, el("span", "v", `${pct(r.counts[k], r.n)}% · ${r.counts[k]}`));
+          bars.append(b);
+        });
+        q.append(bars);
+        if (r.Q.scale && r.avg != null) q.append(el("div", "rp-flag", `Average ${r.avg.toFixed(1)} of 5`));
+        box.append(q);
+      });
+      qsSec.append(box);
+    });
+    out.push(qsSec);
+    return out;
+  }
+
+  function downloadCsv({ qs, teams }) {
+    const lines = [["Team standings"], ["Rank", "Team", "Players", "Total points", "Average points", "Fully right %"]];
+    teams.forEach((t) => lines.push([t.rank, t.name, t.players, t.total, t.avg, pct(t.full, t.answered)]));
+    lines.push([], ["Answers by question"], ["Video", "Question", "Answer", "Correct?", "Picked by", "% of answering players", "Answered", "Fully right %", "Scored?"]);
+    qs.forEach((r) => r.Q.choices.forEach((c, k) => lines.push([
+      r.Q.roundTitle, r.Q.q, c.label, r.Q.unscored ? "" : r.Q.answer.includes(k) ? "yes" : "no",
+      r.counts[k], pct(r.counts[k], r.n), r.n, r.Q.unscored ? "" : pct(r.full, r.n), r.Q.unscored ? "no" : "yes"
+    ])));
+    const blob = new Blob([lines.map((l) => l.map(csvCell).join(",")).join("\r\n")], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `what-lies-beneath-results-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
+
   // ── Clicker / keyboard ──────────────────────────────
   // Same keys as the AI Control Room: most clickers send PageDown/PageUp.
   const NAV_NEXT = ["ArrowRight", "PageDown", " ", "Spacebar"], NAV_PREV = ["ArrowLeft", "PageUp"];
   let lastNav = 0;
   addEventListener("keydown", (e) => {
-    if (!game || $("console").hidden || document.querySelector(".modal-back")) return;
+    if (!game || $("console").hidden || document.querySelector(".modal-back, .report-back")) return;
     const a = document.activeElement, tag = a && a.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
     if (e.altKey || e.ctrlKey || e.metaKey) return;
@@ -605,6 +845,7 @@
     tags.append(el("span", "tag", fmtClock(timeLimitFor(i) * 1000)));
     if (Q.multi) tags.append(el("span", "tag", "Pick all that apply"));
     if (Q.scale) tags.append(el("span", "tag", "Confidence poll · not scored"));
+    if (Q.noKey && !Q.scale) tags.append(el("span", "tag", "No answer key · poll, not scored"));
     if (Q.video) tags.append(el("span", "tag", Q.video.youtube ? "YouTube video" : "Video"));
     box.append(tags, el("p", "qt", Q.q));
     Q.choices.forEach((c, k) => {
@@ -661,7 +902,7 @@
       qs.forEach(({ Q, i }) => {
         if (Q.video) sec.append(row({ cls: "vid", num: "▶", text: `Play ${Q.roundTitle}`, cur: phase === "video" && qIndex === i, target: { phase: "video", qIndex: i } }));
         sec.append(row({
-          num: `Q${Q.step + 1}`, text: Q.q, status: isScored(i) ? "✓ done" : "",
+          num: `Q${Q.step + 1}`, text: Q.q, status: isScored(i) ? "✓ done" : Q.noKey ? "poll" : "",
           cur: qIndex === i && (phase === "question" || phase === "reveal"),
           target: isScored(i) ? { phase: "reveal", qIndex: i } : { phase: "question", qIndex: i }
         }));

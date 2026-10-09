@@ -32,8 +32,13 @@ export const GAME = {
 
   // Scoring (every player's points go to their team). Speed doesn't matter —
   // any answer locked in before the timer ends scores the same.
+  //   • Points for EACH correct pick (e.g. Roots + Crack both right = 200).
+  //   • Any incorrect pick on a question = 0 points for that question,
+  //     even if the correct ones were picked too.
+  //   • A question with more than one accepted answer (e.g. Maintain it OR Fix it)
+  //     scores full points for picking any one of them.
   defaultTimeLimit: 120,  // seconds per question (2 min for table discussion); a question can set its own "time"
-  basePoints: 100,        // for a correct answer
+  basePoints: 100,        // per correct answer
   streakBonus: 0,         // optional: extra points per fully-correct answer in a row (0 = off)
   streakBonusMax: 0,      // ...capped here
   // Pick-all-that-apply questions give partial credit:
@@ -99,10 +104,10 @@ export const DECISIONS = [
 export const ROUND_QUESTIONS = [
   {
     id: "confidence",
-    q: "How confident are you that you know what needs to be done?",
-    scale: true,
-    low: "Not sure at all",
-    high: "Very confident",
+    q: "How confident is your team?",
+    scale: true,            // phones get a 1–5 slider
+    low: "Not confident",
+    high: "Extremely confident",
     choices: ["1", "2", "3", "4", "5"]
   },
   {
@@ -124,38 +129,49 @@ export const ROUND_QUESTIONS = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// ROUNDS — one per video. The video plays on the big screen, then
-// the three questions above are asked about it.
+// ROUNDS — one per video, in the order they're played. The video plays on
+// the big screen, then the questions above are asked about it.
 //
-//   title    shown on screen ("Video 1", or a location name)
-//   video    { src: "video/clip1.mp4" }                 file in /video
-//            { youtube: "VIDEO_ID", start: 0, end: 45 }  YouTube (start/end optional)
+//   title    shown on screen and in the admin run of show
+//   video    { src: "video/<file name>.mp4" }            file in /video
+//            { youtube: "VIDEO_ID", start: 0, end: 45 }   YouTube (start/end optional)
 //   answers  correct answers, written exactly as the choice labels above
-//            (capitals don't matter). "seen" can list several.
+//            (capitals don't matter). Any question can list several:
+//              seen    → every item that's in the video (points for each one)
+//              serious → every acceptable call (any one of them scores)
+//            Leave a question out of answers and it's asked as an unscored poll:
+//            the room still votes and sees the results, nobody gets points.
 //   explain  optional one-liners shown on the screen at each reveal
-//
-// SAMPLE — replace with the real videos and answers.
 // ─────────────────────────────────────────────────────────────
 export const ROUNDS = [
   {
-    title: "Video 1",
-    video: { src: "video/sample.mp4" },
-    answers: {
-      seen: ["Roots", "Crack"],
-      serious: "Maintain it",
-      action: "Root removal"
-    },
-    explain: {
-      serious: "Sample note — roots and a minor crack: clean it and keep an eye on it."
-    }
+    title: "Bartlesville 2",
+    video: { src: "video/Bartlesville 2 - Edit - Final.mp4" },
+    answers: { seen: ["Crack", "Roots"], serious: ["Maintain it", "Fix it"] }
   },
   {
-    title: "Video 2",
-    video: { src: "video/sample.mp4" },
-    answers: {
-      seen: ["Offset(s)", "Protruding taps"],
-      serious: "Fix it",
-      action: "Point repair"
-    }
+    title: "Bartlesville 2A",
+    video: { src: "video/Bartlesville 2A - Edit - Final.mp4" },
+    answers: { seen: ["Offset(s)"], serious: ["Fix it"] }
+  },
+  {
+    title: "Mellenson",
+    video: { src: "video/Mellenson - Edit - Final.mp4" },
+    answers: { seen: ["Roots", "Crack", "Grease"], serious: ["Act now"] }
+  },
+  {
+    title: "Barnsdall",
+    video: { src: "video/Barnsdall - Edit - Final.mp4" },
+    answers: { seen: ["Crack", "Roots", "Offset(s)"], serious: ["Act now"] }
+  },
+  {
+    title: "Smittle",
+    video: { src: "video/Smittle - Edit - Final.mp4" },
+    answers: { }   // answers still to come: asked as polls until filled in
+  },
+  {
+    title: "Yale",
+    video: { src: "video/Yale - Edit - Final.mp4" },   // file not uploaded yet
+    answers: { seen: ["Offset(s)", "Protruding taps"] }   // "serious" still to come
   }
 ];

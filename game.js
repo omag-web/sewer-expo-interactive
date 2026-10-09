@@ -41,9 +41,11 @@ export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) =>
     if (idx < 0) console.warn(`config.js: "${a}" isn't a choice for "${t.q}" in ${r.title}`);
     return idx;
   }).filter((x) => x >= 0);
-  if (!answer.length) console.warn(`config.js: no correct answer set for "${t.q}" in ${r.title}`);
+  // no answer key yet → asked as an unscored poll
+  const noKey = !answer.length;
   return {
     id: t.id, q: t.q, multi: !!t.multi, time: t.time, choices, answer,
+    noKey, unscored: noKey,
     hasMeanings: choices.some((c) => c.meaning),
     explain: r.explain ? r.explain[t.id] : "",
     round: ri, roundTitle: r.title || `Video ${ri + 1}`, step: k, steps: ROUND_QUESTIONS.length,
@@ -134,21 +136,26 @@ export function describeStep(s) {
 // ── Scoring ──────────────────────────────────────────────
 // picks: array of choice indexes. Single-choice questions are all-or-nothing;
 // pick-all-that-apply gets (right − wrong) ÷ number of right answers.
+// Scoring rule:
+//   • any incorrect pick → 0 for the question (even with correct picks too)
+//   • pick-all-that-apply: points for each correct pick
+//   • single pick with several accepted answers: any one of them is fully right
+// units = how many basePoints to award; frac = share of the full answer (0–1).
 export function grade(Q, picks) {
   const ans = new Set(Q.answer);
   const uniq = [...new Set(picks || [])];
   const hits = uniq.filter((p) => ans.has(p)).length;
   const wrong = uniq.length - hits;
-  const exact = uniq.length > 0 && hits === ans.size && wrong === 0;
-  const frac = Q.multi ? Math.max(0, (hits - wrong) / Math.max(1, ans.size)) : (exact ? 1 : 0);
-  return { frac, exact, hits, wrong, total: ans.size };
+  if (!uniq.length || wrong > 0 || !hits) return { frac: 0, exact: false, hits, wrong, total: ans.size, units: 0 };
+  if (Q.multi) return { frac: hits / ans.size, exact: hits === ans.size, hits, wrong, total: ans.size, units: hits };
+  return { frac: 1, exact: true, hits, wrong, total: ans.size, units: 1 };
 }
 // conf: the player's 1–5 confidence for this round (only used when GAME.confidenceWager is on)
-export function pointsFor({ frac, exact, elapsedMs, limitSec, streakBefore, conf }) {
+export function pointsFor({ units, exact, streakBefore, conf }) {
   const w = GAME.confidenceWager && conf ? GAME.wager[conf] : null;
-  if (!frac) return w ? w.wrong : 0;
+  if (!units) return w ? w.wrong : 0;
   const streak = exact ? Math.min(GAME.streakBonusMax || 0, (GAME.streakBonus || 0) * streakBefore) : 0;
-  return Math.round((frac * GAME.basePoints + streak) * (w ? w.right : 1));
+  return Math.round((units * GAME.basePoints + streak) * (w ? w.right : 1));
 }
 export const scoredUpTo = (n) => QUESTIONS.slice(0, n).filter((q) => !q.unscored).length;
 

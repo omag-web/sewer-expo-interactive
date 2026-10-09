@@ -117,6 +117,14 @@
 
   .lobby-title { font-size: 8.4vh; }
   .join .lobby-sub { color: var(--accent); font-family: var(--cond); font-weight: 700; font-size: 3.4vh; line-height: 1.1; margin-top: -1vh; }
+  .bigslider { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 4vw; }
+  .bs-track { position: relative; display: flex; justify-content: space-between; align-items: center; height: 14vh; }
+  .bs-track::before { content: ""; position: absolute; left: 3vh; right: 3vh; top: 50%; height: 1.6vh; transform: translateY(-50%); border-radius: 1vh;
+    background: linear-gradient(90deg, #8a8178, #d49c61 60%, #e9b27a); }
+  .bs-stop { position: relative; display: flex; flex-direction: column; align-items: center; width: 6vh; }
+  .bs-stop i { width: 6vh; height: 6vh; border-radius: 50%; background: var(--base); border: .7vh solid var(--accent); }
+  .bs-stop b { position: absolute; top: 8.2vh; font-family: var(--cond); font-size: 6vh; line-height: 1; }
+  .bs-ends { display: flex; justify-content: space-between; margin-top: 9vh; font-size: 3.2vh; font-weight: 700; color: var(--accent); }
   .scale-q .grid4 { grid-template-columns: repeat(5, 1fr) !important; grid-template-rows: 1fr !important; max-height: 40vh; }
   .scale-q .ch { justify-content: center; border-left: 0; border-top: 1.4vh solid var(--c); }
   .scale-q .ch .tx, .scale-q .ch .ct, .scale-q .ch .fill { display: none; }
@@ -462,11 +470,19 @@
     top.append(el("p", "qtext", Q.q), ring);
     const { grid, items } = choiceGrid(Q);
     const foot = el("div", "qfoot");
-    const count = el("span"); const hint = el("span", null, Q.scale ? "Rate it on your phone — results show once everyone's in" : Q.multi ? "Pick ALL that apply on your phone, then lock in" : "Answer on your phone");
+    const count = el("span"); const hint = el("span", null, Q.scale ? "Slide to your answer on your phone — results show once everyone's in" : Q.multi ? "Pick ALL that apply on your phone, then lock in" : "Answer on your phone");
     foot.append(count, hint);
-    v.append(top, grid);
-    if (Q.scale) { const e = el("div", "scale-ends"); e.append(el("span", null, `1 · ${Q.low || ""}`), el("span", null, `${Q.high || ""} · 5`)); v.append(e); }
-    v.append(foot);
+    if (Q.scale) {
+      // slider graphic matching what phones see
+      const sl = el("div", "bigslider");
+      const track = el("div", "bs-track");
+      for (let n = 1; n <= 5; n++) { const s = el("div", "bs-stop"); s.append(el("i"), el("b", null, String(n))); track.append(s); }
+      const ends = el("div", "bs-ends"); ends.append(el("span", null, Q.low || ""), el("span", null, Q.high || ""));
+      sl.append(track, ends);
+      v.append(top, sl, foot);
+    } else {
+      v.append(top, grid, foot);
+    }
 
     const fg = ring.querySelector(".fg"), num = ring.querySelector(".num");
     const limit = (game.timeLimit || timeLimitFor(i)) * 1000;
@@ -504,10 +520,10 @@
     const v = view("results");
     const top = el("div", "qtop");
     top.append(el("p", "qtext", Q.q));
-    const sub = el("p", "eyebrow", Q.multi ? "How the room voted · % of players who picked each" : "How the room voted");
+    const sub = el("p", "eyebrow", `How the room voted${Q.multi ? " · % of players who picked each" : ""}${Q.noKey ? " · not scored" : ""}`);
     const chart = el("div", "vchart");
     const cols = Q.choices.map((c, k) => {
-      const col = el("div", `vcol ${Q.answer.includes(k) ? "right" : "wrong"}`);
+      const col = el("div", `vcol ${Q.noKey ? "" : Q.answer.includes(k) ? "right" : "wrong"}`);
       col.style.setProperty("--c", c.color);
       const val = el("div", "vval"), track = el("div", "vtrack"), bar = el("i");
       track.append(bar);

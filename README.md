@@ -10,15 +10,17 @@ Static site (GitHub Pages) + the Expo Wall's existing Firebase project (`sewer-e
 |---|---|---|
 | `index.html` | Attendees' phones | Join (name + team), answer, see correct/incorrect, team standing. **Key** button shows the decision key anytime. |
 | `screen.html` | Projector / ProPresenter web view | Lobby with QR + decision key, videos, live answer bars, bell curve, team standings, finale. Loads straight into the game. Full screen: corner button or `F`. If a browser starts a video muted, one click anywhere turns the sound on. Join link/QR: link.omag.org/what-lies-beneath |
-| `admin.html` | Presenter (or type **admin** on the screen or player page) | Admin console: run of show, Next/Back (clicker keys work), live answers, team board, Redo this question, Reset scores, Reset game. Sign in with the Expo Wall moderator login. |
+| `admin.html` | Presenter (or type **admin** on the screen or player page) | Admin console: run of show, Next/Back (clicker keys work), live answers, team board, any-time standings, **Results report** (team scores + question-by-question breakdown, CSV download), Redo this question, Reset scores, Reset game. Sign in with the Expo Wall moderator login. |
 
 ## Each video round
 
 1. Video plays on the screen
-2. **How confident are you that you know what needs to be done?** 1–5, not scored → bell curve at the reveal
-3. **What did you see?** pick all that apply → partial credit
+2. **How confident is your team?** 1–5 slider on phones, not scored → bell curve at the reveal
+3. **What did you see?** pick all that apply
 4. **How serious is it?** Watch it / Maintain it / Fix it / Act now
 5. **What would you do?** single pick
+
+**Scoring:** 100 points for each correct answer. Any incorrect pick on a question = 0 for that question, even if the correct ones were picked too. If a question has more than one accepted answer (e.g. Maintain it or Fix it), any one of them scores. A question with no answer key in `config.js` is asked as an unscored poll.
 
 Full-screen team standings show once at halftime (`standingsAfter` in `config.js`), and the finale shows the winners.
 

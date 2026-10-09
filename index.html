@@ -104,6 +104,20 @@
   .choice.picked .box::after { content: "✓"; }
   .choice:disabled { cursor: default; }
   .choice.dim { opacity: .35; }
+  /* confidence slider */
+  .slider { background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; padding: 18px 16px 14px; text-align: center; }
+  .sl-val { font-family: var(--cond); font-weight: 700; font-size: 72px; line-height: 1; color: var(--accent); }
+  .sl-word { font-weight: 700; font-size: 18px; margin: 4px 0 16px; min-height: 1.3em; }
+  .slider input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 14px; border-radius: 7px; outline: none; margin: 0;
+    background: linear-gradient(90deg, var(--accent) 0 var(--pct, 50%), var(--panel2) var(--pct, 50%) 100%); }
+  .slider input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 36px; height: 36px; border-radius: 50%; background: #fff; border: 5px solid var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.5); cursor: pointer; }
+  .slider input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 5px solid var(--accent); cursor: pointer; }
+  .slider input[type=range]:focus-visible::-webkit-slider-thumb { outline: 3px solid #fff; outline-offset: 2px; }
+  .sl-ticks { display: flex; justify-content: space-between; margin: 12px -4px 4px; }
+  .sl-tick { width: 40px; height: 34px; border-radius: 6px; border: 1px solid var(--edge); background: transparent; color: var(--muted); font-family: var(--cond); font-weight: 700; font-size: 19px; cursor: pointer; }
+  .sl-tick.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .slider.locked { opacity: .75; }
+  .slider .scale-ends { margin-top: 6px; }
   .tagline { color: var(--accent); font-family: var(--cond); font-weight: 700; font-size: 21px; line-height: 1.15; margin: -4px 0 0; }
   .choices.scale { grid-template-columns: repeat(5, 1fr); gap: 8px; }
   .choices.scale .choice { min-height: 76px; justify-content: center; padding: 0; border-left-width: 2px; border-top: 8px solid var(--c); }
@@ -216,7 +230,7 @@
     const q = game ? game.qIndex : null;
     if (q === ansFor) return;
     if (ansUnsub) ansUnsub();
-    ansFor = q; myAnswer = null; pending = null; draft = new Set();
+    ansFor = q; myAnswer = null; pending = null; draft = new Set(); sliderVal = 3;
     if (q == null) return;
     ansUnsub = onSnapshot(doc(db, "games", GAME.id, "answers", answerId(uid, q)), (s) => {
       const had = !!myAnswer;
@@ -357,7 +371,9 @@
     return [el("span", c.emoji ? "lt emo" : "lt", choiceMark(c, k)), t];
   }
 
-  function viewQuestion(i) {
+  // ── Confidence: 1–5 slider ───────────────────────────
+  let sliderVal = 3;
+  function viewSlider(i) {
     const Q = QUESTIONS[i];
     const v = el("div", "view");
     const head = el("div", "qhead");
@@ -365,8 +381,71 @@
     const timer = el("div", "timer"); head.append(timer);
     const bar = el("div", "tbar"); const fill = el("i"); bar.append(fill);
     v.append(head, bar, el("p", "qtext", Q.q));
+    v.append(el("p", "note", "Talk it over with your table, slide to your answer, then lock in."));
+
+    const locked = picksNow();
+    const val = locked ? locked[0] + 1 : sliderVal;
+    const box = el("div", "slider" + (locked ? " locked" : ""));
+    const big = el("div", "sl-val", String(val));
+    const word = el("div", "sl-word");
+    const words = ["Not confident", "A little confident", "Somewhat confident", "Very confident", "Extremely confident"];
+    words[0] = Q.low || words[0]; words[4] = Q.high || words[4];
+    const range = el("input"); range.type = "range"; range.min = "1"; range.max = "5"; range.step = "1"; range.value = String(val);
+    range.setAttribute("aria-label", Q.q); range.disabled = !!locked;
+    const ticks = el("div", "sl-ticks");
+    for (let n = 1; n <= 5; n++) {
+      const t = el("button", "sl-tick", String(n)); t.type = "button"; t.disabled = !!locked;
+      t.onclick = () => { range.value = String(n); paint(); };
+      ticks.append(t);
+    }
+    const ends = el("div", "scale-ends"); ends.append(el("span", null, words[0]), el("span", null, words[4]));
+    const paint = () => {
+      const n = Number(range.value);
+      if (!locked) sliderVal = n;
+      big.textContent = String(n); word.textContent = words[n - 1];
+      range.style.setProperty("--pct", `${((n - 1) / 4) * 100}%`);
+      ticks.querySelectorAll(".sl-tick").forEach((t, k) => t.classList.toggle("on", k + 1 === n));
+    };
+    range.oninput = paint;
+    box.append(big, word, range, ticks, ends);
+    v.append(box);
+    paint();
+
+    let lockBtn = null;
+    if (!locked) {
+      lockBtn = el("button", "btn", "Lock in"); lockBtn.type = "button";
+      lockBtn.onclick = () => submit(i, [Number(range.value) - 1]);
+      v.append(lockBtn);
+    }
+    const status = el("p", "locked", locked ? "Locked in. Waiting for the room…" : "");
+    v.append(status);
+
+    const limit = (game.timeLimit || timeLimitFor(i)) * 1000;
+    const update = () => {
+      const r = remainingMs(game);
+      timer.textContent = fmtClock(r);
+      timer.classList.toggle("low", r <= 15000);
+      fill.style.transform = `scaleX(${Math.min(1, r / limit)})`;
+      if (r <= 0) {
+        clearInterval(tick); tick = null;
+        if (!picksNow()) { range.disabled = true; if (lockBtn) lockBtn.disabled = true; status.textContent = "Time's up!"; }
+      }
+    };
+    update();
+    tick = setInterval(update, 200);
+    return v;
+  }
+
+  function viewQuestion(i) {
+    const Q = QUESTIONS[i];
+    if (Q.scale) return viewSlider(i);
+    const v = el("div", "view");
+    const head = el("div", "qhead");
+    head.append(el("p", "eyebrow", qLabel(i)));
+    const timer = el("div", "timer"); head.append(timer);
+    const bar = el("div", "tbar"); const fill = el("i"); bar.append(fill);
+    v.append(head, bar, el("p", "qtext", Q.q));
     if (Q.multi) v.append(el("p", "qhint", "Pick all that apply, then lock in"));
-    if (Q.scale) v.append(el("p", "qhint", GAME.confidenceWager ? "Your confidence raises or lowers your points for this video" : "About what you just saw in the video"));
     v.append(el("p", "note", "Talk it over with your table — you can change picks until you lock in."));
 
     const locked = picksNow();
@@ -436,31 +515,60 @@
   function viewReveal(i) {
     const Q = QUESTIONS[i];
     if (Q.scale) return viewScaleReveal(i);
+    if (Q.noKey) return viewPollReveal(i);
     const v = el("div", "view center");
     const picks = myAnswer ? myAnswer.picks : null;
+    const g = picks ? grade(Q, picks) : null;
     if (!picks) {
       v.append(el("div", "big-icon", "⏱️"), el("div", "result bad", "No answer"), el("p", "sub", "Time ran out on that one."));
+    } else if (g.exact) {
+      v.append(el("div", "big-icon", "✅"), el("div", "result good", "Correct!"));
+    } else if (g.units > 0) {
+      v.append(el("div", "big-icon", "👍"), el("div", "result part", "Partly right"), el("p", "sub", `You found ${g.hits} of ${g.total}`));
+    } else if (g.hits > 0 && g.wrong > 0) {
+      v.append(el("div", "big-icon", "❌"), el("div", "result bad", "Not quite"),
+        el("p", "sub", `You had ${g.wrong === 1 ? "a pick" : g.wrong + " picks"} that ${g.wrong === 1 ? "wasn't" : "weren't"} right — any incorrect pick means no points on this one.`));
     } else {
-      const g = grade(Q, picks);
-      if (g.exact) v.append(el("div", "big-icon", "✅"), el("div", "result good", "Correct!"));
-      else if (g.frac > 0) v.append(el("div", "big-icon", "👍"), el("div", "result part", "Partly right"), el("p", "sub", `You found ${g.hits} of ${g.total}${g.wrong ? ` · ${g.wrong} extra` : ""}`));
-      else v.append(el("div", "big-icon", "❌"), el("div", "result bad", "Not quite"));
-      if (myAnswer.points != null) v.append(el("div", "pts", `+${fmt(myAnswer.points)}`), el("p", "sub", "points for your team"));
+      v.append(el("div", "big-icon", "❌"), el("div", "result bad", "Not quite"));
     }
+    if (picks && myAnswer.points != null) v.append(el("div", "pts", `+${fmt(myAnswer.points)}`), el("p", "sub", "points for your team"));
+
     // answer breakdown
     const ans = new Set(Q.answer), mine = new Set(picks || []);
     const list = el("div", "anslist");
-    list.append(el("h4", null, Q.answer.length > 1 ? "Correct answers" : "Correct answer"));
+    list.append(el("h4", null, Q.answer.length < 2 ? "Correct answer" : Q.multi ? "Correct answers" : "Accepted answers (any one)"));
     Q.choices.forEach((c, k) => {
       const isAns = ans.has(k), picked = mine.has(k);
       if (!isAns && !picked) return;
-      const cls = isAns ? (picked || !picks ? "ok" : "miss") : "bad";
+      // on single-pick questions with several accepted answers, unpicked ones aren't "missed"
+      const missed = isAns && !picked && picks && Q.multi;
+      const cls = isAns ? (missed ? "miss" : "ok") : "bad";
       const r = el("div", `arow ${cls}`); r.style.setProperty("--c", c.color);
       const label = (c.emoji ? c.emoji + " " : "") + c.label;
-      r.append(el("span", null, label), el("span", "ic", isAns ? (picked ? "✓ You got it" : picks ? "Missed" : "") : "✗ Not in this one"));
+      r.append(el("span", null, label), el("span", "ic", isAns ? (picked ? "✓ You got it" : missed ? "Missed" : "") : "✗ Not correct"));
       list.append(r);
     });
     v.append(list);
+    return v;
+  }
+
+  // Questions without an answer key: just show what they picked
+  function viewPollReveal(i) {
+    const Q = QUESTIONS[i];
+    const v = el("div", "view center");
+    const picks = myAnswer ? myAnswer.picks : null;
+    v.append(el("div", "big-icon", "🗳️"), el("div", "result part", "Thanks!"), el("p", "sub", "This one isn't scored — check the big screen to see how the room voted."));
+    if (picks) {
+      const list = el("div", "anslist");
+      list.append(el("h4", null, picks.length > 1 ? "Your picks" : "Your pick"));
+      picks.forEach((k) => {
+        const c = Q.choices[k];
+        const r = el("div", "arow"); r.style.setProperty("--c", c.color);
+        r.append(el("span", null, (c.emoji ? c.emoji + " " : "") + c.label));
+        list.append(r);
+      });
+      v.append(list);
+    }
     return v;
   }
 
