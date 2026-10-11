@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261011165828">
+<link rel="stylesheet" href="theme.css?v=20261011170804">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   /* Built for a 16:9 display; everything scales with the viewport. */
@@ -239,8 +239,8 @@
   import { onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qLabel,
-    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut, fmtClock, videoSignalRef, auth, CLOSING_VIDEO, CLOSING_SLIDE, scaleValue, keepClockSynced, checkVersion
-  } from "./game.js?v=20261011165828";
+    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut, fmtClock, videoSignalRef, auth, CLOSING_VIDEO, CLOSING_SLIDE, scaleValue, keepClockSynced, checkVersion, showLag
+  } from "./game.js?v=20261011170804";
   import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   // ?preview=1 = the small mirror on the admin page: muted,
@@ -297,6 +297,7 @@
   onSnapshot(gameRef, (s) => {
     const prev = game;
     game = s.exists() ? s.data({ serverTimestamps: "estimate" }) : null;
+    showLag(game);
     if (!PREVIEW) checkVersion(game, (on) => {
       let b = $("stalebar");
       if (on && !b) { b = el("div", "stalebar", "⚠ Newer version published — press Ctrl + Shift + R"); b.id = "stalebar"; document.querySelector(".top").insertBefore(b, $("topRight")); }

@@ -1,8 +1,8 @@
 // Shared game logic for all three pages. Edit config.js, not this file.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, connectAuthEmulator } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, connectFirestoreEmulator, doc, collection, setDoc, getDocFromServer, serverTimestamp, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, GAME, TEAMS, DECISIONS, ROUND_QUESTIONS, ROUNDS, CLOSING_VIDEO, PRACTICE, CLOSING_SLIDE } from "./config.js?v=20261011165828";
+import { initializeFirestore, connectFirestoreEmulator, doc, collection, setDoc, getDocFromServer, serverTimestamp, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig, GAME, TEAMS, DECISIONS, ROUND_QUESTIONS, ROUNDS, CLOSING_VIDEO, PRACTICE, CLOSING_SLIDE } from "./config.js?v=20261011170804";
 
 export { GAME, TEAMS, DECISIONS, ROUNDS, CLOSING_VIDEO, CLOSING_SLIDE };
 
@@ -79,7 +79,7 @@ export const QUESTIONS = [...PRACTICE_QS, ...VIDEO_QS.map((Q) => ({ ...Q, confIn
 // old (cached) code and refreshes itself.
 // BUILD changes with every update (set automatically when changes are saved),
 // so any code change — not just question changes — makes old pages refresh.
-export const BUILD = "20261011165828";
+export const BUILD = "20261011170804";
 export const QSIG = (() => {
   const t = BUILD + JSON.stringify(QUESTIONS.map((q) => [q.round, q.id, q.q, q.time, q.choices.map((c) => c.label), q.answer, !!q.multi, !!q.leaderboard, !!q.extra]));
   let h = 5381; for (let k = 0; k < t.length; k++) h = ((h * 33) ^ t.charCodeAt(k)) >>> 0;
@@ -142,7 +142,25 @@ export const choiceMark = (c, k) => c.emoji || c.mark || LETTERS[k];
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Long polling instead of streaming: venue and office Wi-Fi often hold a
+// streamed connection's data back for seconds at a time (firewalls that
+// inspect traffic do this). Long polling sends each change in its own
+// response, so phones get every step the moment the admin clicks.
+export const db = initializeFirestore(app, { experimentalForceLongPolling: true });
+
+// Add ?lag=1 to any page to see how long each admin change took to arrive.
+const LAG = new URLSearchParams(location.search).get("lag") === "1";
+let lagSeen = null;
+export function showLag(game) {
+  if (!LAG || !game || !game.updatedAt || !game.updatedAt.toMillis) return;
+  const t = game.updatedAt.toMillis();
+  if (t === lagSeen) return; lagSeen = t;
+  let b = document.getElementById("lagBadge");
+  if (!b) { b = document.createElement("div"); b.id = "lagBadge"; b.style.cssText = "position:fixed;right:8px;bottom:8px;z-index:9999;background:#000c;color:#fff;font:600 13px system-ui;padding:6px 10px;border-radius:8px"; document.body.append(b); }
+  const ms = Math.max(0, Math.round(serverNow() - t));
+  b.textContent = `Last change arrived in ${ms < 1000 ? ms + " ms" : (ms / 1000).toFixed(1) + " s"}`;
+  b.style.background = ms < 1000 ? "#1d7a3acc" : ms < 3000 ? "#a87a12cc" : "#b8452fcc";
+}
 
 // Local testing only: add ?emulator=1 to any page URL.
 if (new URLSearchParams(location.search).get("emulator") === "1") {

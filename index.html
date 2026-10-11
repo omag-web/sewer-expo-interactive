@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261011165828">
+<link rel="stylesheet" href="theme.css?v=20261011170804">
 <style>
   body { display: flex; flex-direction: column; }
   header {
@@ -179,8 +179,8 @@
   import { doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, auth, db, gameRef, answerId, $, el, setLogo, choiceMark, qLabel,
-    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError, enableAdminShortcut, fmtClock, scaleValue, keepClockSynced, checkVersion
-  } from "./game.js?v=20261011165828";
+    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError, enableAdminShortcut, fmtClock, scaleValue, keepClockSynced, checkVersion, showLag
+  } from "./game.js?v=20261011170804";
   enableAdminShortcut();
 
   document.title = GAME.title;
@@ -226,6 +226,7 @@
       if (game && game.phase === "question" && prev && (prev.phase !== "question" || prev.qIndex !== game.qIndex) && game.openedAt) {
         noteLiveOpen(game.openedAt.toMillis());
       }
+      showLag(game);
       watchAnswer();
       // a question reopened by the admin (Redo) gets a fresh openedAt: let phones answer again
       const opened = game && game.phase === "question" && game.openedAt ? game.openedAt.toMillis() : null;
