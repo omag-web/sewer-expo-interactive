@@ -278,7 +278,7 @@
     $("tools").hidden = !isHost;
     $("adminBadge").hidden = !isHost;
     if (!isHost) { $("console").hidden = true; $("setup").hidden = true; return; }
-    if (!$("pvFrame").src) $("pvFrame").src = "screen.html?preview=1" + (emu ? "&emulator=1" : "");
+    if (!$("pvFrame").src) $("pvFrame").src = `screen.html?preview=1&v=${QSIG}` + (emu ? "&emulator=1" : "");
     setTimeout(fitPreview, 0);
     unsubs.push(onSnapshot(gameRef, (s) => {
       game = s.exists() ? s.data({ serverTimestamps: "estimate" }) : null;

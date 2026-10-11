@@ -77,8 +77,11 @@ export const QUESTIONS = [...PRACTICE_QS, ...VIDEO_QS.map((Q) => ({ ...Q, confIn
 // Fingerprint of the question list, answer keys and timers. The admin page
 // stamps it on the game; any phone or screen whose copy differs is running
 // old (cached) code and refreshes itself.
+// BUILD changes with every update (set automatically when changes are saved),
+// so any code change — not just question changes — makes old pages refresh.
+export const BUILD = "20261011015925";
 export const QSIG = (() => {
-  const t = JSON.stringify(QUESTIONS.map((q) => [q.round, q.id, q.q, q.time, q.choices.map((c) => c.label), q.answer, !!q.multi, !!q.leaderboard, !!q.extra]));
+  const t = BUILD + JSON.stringify(QUESTIONS.map((q) => [q.round, q.id, q.q, q.time, q.choices.map((c) => c.label), q.answer, !!q.multi, !!q.leaderboard, !!q.extra]));
   let h = 5381; for (let k = 0; k < t.length; k++) h = ((h * 33) ^ t.charCodeAt(k)) >>> 0;
   return h.toString(36);
 })();

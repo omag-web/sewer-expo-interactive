@@ -330,7 +330,7 @@
     viewKey = key;
     clearInterval(tick); tick = null;
     if (phase !== "video") stopVideo();
-    $("topRight").textContent = ["lobby", "final", "outro", "closing"].includes(phase) ? "" : qLabel(q);
+    $("topRight").textContent = ["video", "question", "reveal"].includes(phase) ? qLabel(q) : "";
     const v = { lobby: viewLobby, video: viewVideo, question: viewQuestion, reveal: viewReveal, leaderboard: viewBoards, standings: viewBoards, final: viewFinal, outro: viewOutro, closing: viewClosing }[phase];
     body.replaceChildren(v ? v(q) : el("div"));
     update();
