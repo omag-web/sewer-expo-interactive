@@ -245,7 +245,7 @@
   import {
     GAME, QUESTIONS, auth, db, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qShort, qLabel, scoredUpTo,
     teamById, stepsFor, nextStep, prevStep, describeStep, pointsFor, grade, rankPlayers, teamStandings,
-    teamValueLabel, remainingMs, timeLimitFor, fmt, explainError, videoSignalRef, fmtClock, CLOSING_VIDEO, scaleValue, scaleBucket
+    teamValueLabel, remainingMs, timeLimitFor, fmt, explainError, videoSignalRef, fmtClock, CLOSING_VIDEO, scaleValue, scaleBucket, keepClockSynced
   } from "./game.js";
 
   setLogo($("logo"));
@@ -267,11 +267,13 @@
   let busy = false, tick = null, autoTimer = null;
 
   // ── Auth ─────────────────────────────────────────────
+  let clockFor = null;
   onAuthStateChanged(auth, (u) => {
     unsubs.forEach((f) => f()); unsubs = [];
     // No-password mode: sign in quietly in the background and go straight in
     if (GAME.adminLogin === false && !u) { signInAnonymously(auth).catch(fail); return; }
     const isHost = GAME.adminLogin === false ? !!u : (u && !u.isAnonymous);
+    if (u && clockFor !== u.uid) { clockFor = u.uid; keepClockSynced(u.uid); }
     $("signin").hidden = !!isHost;
     $("tools").hidden = !isHost;
     $("adminBadge").hidden = !isHost;

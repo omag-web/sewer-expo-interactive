@@ -1,7 +1,7 @@
 // Shared game logic for all three pages. Edit config.js, not this file.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, connectAuthEmulator } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, connectFirestoreEmulator, doc, collection } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, connectFirestoreEmulator, doc, collection, setDoc, getDocFromServer, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig, GAME, TEAMS, DECISIONS, ROUND_QUESTIONS, ROUNDS, CLOSING_VIDEO, PRACTICE } from "./config.js";
 
 export { GAME, TEAMS, DECISIONS, ROUNDS, CLOSING_VIDEO };
@@ -226,16 +226,47 @@ export function teamStandings(players) {
 export const teamValueLabel = () => (GAME.teamScoring === "total" ? "total pts" : "avg pts");
 
 // ── Clock ────────────────────────────────────────────────
-// Timers run off the server's openedAt timestamp. When a client sees a
-// question open live, it measures its own clock skew so a phone with a
-// wrong clock still shows the right countdown.
-let skew = Number(sessionStorage.getItem("clockSkew") || 0);
-export function noteLiveOpen(openedAtMs) {
-  if (!openedAtMs) return;
-  const s = Date.now() - openedAtMs;
-  if (Math.abs(s) > 1500) { skew = s; sessionStorage.setItem("clockSkew", String(s)); }
+// Every timer counts down to the same moment: the server's openedAt + the
+// time limit. Each device measures how far its own clock is from the Firebase
+// server's clock (write a server timestamp, read it back, take the fastest of
+// a few tries), so the phones, the screen and the admin page all show the
+// same number even if a device's clock is off.
+let offset = 0;                 // server time − this device's time, in ms
+try { sessionStorage.removeItem("clockSkew"); } catch {}   // old method's leftover
+export const serverNow = () => Date.now() + offset;
+export function noteLiveOpen() {}  // no longer used (kept so older pages don't break)
+let syncing = null;
+const TAB_ID = Math.random().toString(36).slice(2, 10);
+export function syncClock(uid) {
+  if (!uid || syncing) return syncing;
+  // one record per open page, so the admin page and its preview don't collide
+  const ref = doc(db, "games", GAME.id, "clock", `${uid}_${TAB_ID}`);
+  syncing = (async () => {
+    let best = null;
+    for (let k = 0; k < 4; k++) {
+      try {
+        const t0 = Date.now();
+        await setDoc(ref, { t: serverTimestamp() });
+        const t1 = Date.now();
+        const snap = await getDocFromServer(ref);
+        if (!snap.exists() || !snap.data().t) continue;
+        const T = snap.data().t.toMillis();
+        const s = { rtt: t1 - t0, off: T - (t0 + t1) / 2 };
+        if (!best || s.rtt < best.rtt) best = s;
+      } catch (e) { console.warn("clock sync", e.code || e); break; }
+    }
+    if (best) offset = best.off;
+    syncing = null;
+    return offset;
+  })();
+  return syncing;
 }
-export const serverNow = () => Date.now() - skew;
+// re-check every few minutes in case a device's clock drifts or it slept
+export function keepClockSynced(uid) {
+  syncClock(uid);
+  setInterval(() => syncClock(uid), 4 * 60 * 1000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) syncClock(uid); });
+}
 export function remainingMs(game) {
   if (!game || game.phase !== "question" || !game.openedAt) return 0;
   const end = game.openedAt.toMillis() + (game.timeLimit || GAME.defaultTimeLimit) * 1000;

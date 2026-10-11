@@ -113,6 +113,15 @@ service cloud.firestore {
         allow delete: if isGameHost();
       }
 
+      // Clock check: each device writes a server timestamp to its own doc and
+      // reads it back, so every timer counts down from the server's clock.
+      match /clock/{clockId} {
+        allow read: if request.auth != null && clockId.matches(request.auth.uid + '_[a-z0-9]+');
+        allow create, update: if request.auth != null && clockId.matches(request.auth.uid + '_[a-z0-9]+')
+          && request.resource.data.keys().hasOnly(['t'])
+          && request.resource.data.t == request.time;
+      }
+
       // One answer per player per question (create-only, id = uid_q).
       match /answers/{answerId} {
         allow read: if true;

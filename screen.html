@@ -237,7 +237,7 @@
   import { onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qLabel,
-    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut, fmtClock, videoSignalRef, auth, CLOSING_VIDEO, scaleValue
+    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut, fmtClock, videoSignalRef, auth, CLOSING_VIDEO, scaleValue, keepClockSynced
   } from "./game.js";
   import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -247,7 +247,11 @@
   if (PREVIEW) document.body.classList.add("preview");
 
   // the screen signs in quietly so it can tell the admin page a video has ended
-  if (!PREVIEW) onAuthStateChanged(auth, (u) => { if (!u) signInAnonymously(auth).catch((e) => console.warn("screen sign-in", e)); });
+  let clockFor = null;
+  onAuthStateChanged(auth, (u) => {
+    if (!u) { if (!PREVIEW) signInAnonymously(auth).catch((e) => console.warn("screen sign-in", e)); return; }
+    if (clockFor !== u.uid) { clockFor = u.uid; keepClockSynced(u.uid); }
+  });
   function videoEnded(q) {
     if (PREVIEW) return;
     setDoc(videoSignalRef(q), { q, at: serverTimestamp() }).catch((e) => console.warn("video signal", e));

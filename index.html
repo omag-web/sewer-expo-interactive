@@ -178,7 +178,7 @@
   import { doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, auth, db, gameRef, answerId, $, el, setLogo, choiceMark, qLabel,
-    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError, enableAdminShortcut, fmtClock, scaleValue
+    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError, enableAdminShortcut, fmtClock, scaleValue, keepClockSynced
   } from "./game.js";
   enableAdminShortcut();
 
@@ -213,6 +213,7 @@
     if (!u) { signInAnonymously(auth).catch(showFatal); return; }
     if (uid === u.uid) return;
     uid = u.uid;
+    keepClockSynced(uid);
     onSnapshot(gameRef, (s) => {
       const prev = game;
       game = s.exists() ? s.data({ serverTimestamps: "estimate" }) : null;
