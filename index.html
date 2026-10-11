@@ -287,7 +287,7 @@
     else if (phase === "question") swap(viewQuestion(q), key);
     else if (phase === "reveal") swap(viewReveal(q), key);
     else if (phase === "leaderboard" || phase === "standings") swap(viewStanding(false), key);
-    else if (phase === "final" || phase === "outro") swap(viewStanding(true), key);
+    else if (phase === "final" || phase === "outro" || phase === "closing") swap(viewStanding(true), key);
   }
 
   // The new view is built (and may start its own timer as nextTick) before

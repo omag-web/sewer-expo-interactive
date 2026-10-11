@@ -205,9 +205,14 @@ export const ROUNDS = [
 // Set to null for no closing video.
 export const CLOSING_VIDEO = {
   title: "Smittle",
-  src: "video/Smittle - Edit - Final.mp4",
-  // Final slide after the video ends: each entry is its own line
-  endText: [
+  src: "video/Smittle - Edit - Final.mp4"
+};
+
+// The last slide of the session, after the closing video. Its own step:
+// click Next (or its row in the admin run of show) to show it.
+// Each entry is its own line. Set to null for no closing slide.
+export const CLOSING_SLIDE = {
+  lines: [
     "You can inspect your sewer lines on your terms.",
     "Or you may end up watching the consequences on someone else's."
   ]

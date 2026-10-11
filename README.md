@@ -22,7 +22,7 @@ The game opens with **two practice questions** (no video, never scored) so the r
 4. **How serious is it?** Watch it / Maintain it / Fix it / Act now
 5. **What would you do?** single pick
 
-**Videos:** Bartlesville 2, Bartlesville 2A, Mellenson and Barnsdall are the scored rounds (halftime standings after Bartlesville 2A, final standings after Barnsdall). **Yale** is a spare: Next skips it, but you can click *Play Yale* in the admin run of show if there's time; its points count and Next then goes to the final standings. **Smittle** is the closing video (`CLOSING_VIDEO` in `config.js`): it plays with sound after the winner is revealed, then a final slide: "You can inspect your sewer lines on your terms. / Or you may end up watching the consequences on someone else's." (`endText`).
+**Videos:** Bartlesville 2, Bartlesville 2A, Mellenson and Barnsdall are the scored rounds (halftime standings after Bartlesville 2A, final standings after Barnsdall). **Yale** is a spare: Next skips it, but you can click *Play Yale* in the admin run of show if there's time; its points count and Next then goes to the final standings. **Smittle** is the closing video (`CLOSING_VIDEO` in `config.js`): it plays with sound after the winner is revealed. Next then shows the **closing slide** ("You can inspect your sewer lines on your terms. / Or you may end up watching the consequences on someone else's." — `CLOSING_SLIDE` in `config.js`), which also has its own row in the admin run of show.
 
 **Sound:** browsers only play video sound after someone has clicked or pressed a key on the screen page. At setup, click once on the screen (the full-screen button works). A small reminder shows in the corner until you do.
 

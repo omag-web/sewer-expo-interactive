@@ -17,7 +17,8 @@
   .stalebar { flex: none; background: var(--bad); color: #fff; font-weight: 700; font-size: 1.8vh; padding: .6vh 1vw; border-radius: .6vh; }
   .soundchip { flex: none; background: rgba(24,23,22,.8); border: 1px solid var(--edge); color: var(--muted); padding: .6vh 1vw; border-radius: 99px; font-size: 1.7vh; font-weight: 600; }
   body.preview .soundchip { display: none; }
-  .endslide { gap: 4vh; padding: 0 8vw; }
+  .closing-slide { justify-content: center; align-items: center; }
+  .endslide { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 4vh; padding: 0 8vw; flex: 1; }
   .endslide .end-line { margin: 0; font-family: var(--cond); font-weight: 700; line-height: 1.12; text-wrap: balance; opacity: 0; animation: rise .9s ease forwards; }
   .endslide .l0 { font-size: 7.6vh; color: #fff; }
   .endslide .l1 { font-size: 6.2vh; color: var(--accent); animation-delay: 1.6s; }
@@ -238,7 +239,7 @@
   import { onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qLabel,
-    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut, fmtClock, videoSignalRef, auth, CLOSING_VIDEO, scaleValue, keepClockSynced, checkVersion
+    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut, fmtClock, videoSignalRef, auth, CLOSING_VIDEO, CLOSING_SLIDE, scaleValue, keepClockSynced, checkVersion
   } from "./game.js";
   import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -329,8 +330,8 @@
     viewKey = key;
     clearInterval(tick); tick = null;
     if (phase !== "video") stopVideo();
-    $("topRight").textContent = ["lobby", "final", "outro"].includes(phase) ? "" : qLabel(q);
-    const v = { lobby: viewLobby, video: viewVideo, question: viewQuestion, reveal: viewReveal, leaderboard: viewBoards, standings: viewBoards, final: viewFinal, outro: viewOutro }[phase];
+    $("topRight").textContent = ["lobby", "final", "outro", "closing"].includes(phase) ? "" : qLabel(q);
+    const v = { lobby: viewLobby, video: viewVideo, question: viewQuestion, reveal: viewReveal, leaderboard: viewBoards, standings: viewBoards, final: viewFinal, outro: viewOutro, closing: viewClosing }[phase];
     body.replaceChildren(v ? v(q) : el("div"));
     update();
   }
@@ -443,15 +444,10 @@
     const v = view();
     stopVideo();
     const wrap = el("div", "vwrap"); document.body.append(wrap);
-    // Final slide: just the closing lines, one per line
-    const endCard = () => {
-      if (wrap.querySelector(".vready")) return;
-      const r = el("div", "vready endslide");
-      const lines = [].concat((CLOSING_VIDEO && CLOSING_VIDEO.endText) || "Thanks for playing!");
-      lines.forEach((t, k) => r.append(el("p", `end-line l${k}`, t)));
-      wrap.append(r);
-    };
-    if (!CLOSING_VIDEO) { endCard(); return v; }
+    // When the video ends it holds on its last frame; the closing slide is
+    // the next step (Next on the admin page).
+    const endCard = () => {};
+    if (!CLOSING_VIDEO) return v;
     const vid = el("video"); vid.src = encodeURI(CLOSING_VIDEO.src); vid.playsInline = true; vid.preload = "auto"; vid.muted = PREVIEW;
     vid.onended = endCard;
     vid.onerror = () => endCard();
@@ -460,6 +456,17 @@
       vid.muted = true; vid.play().catch(() => endCard());
       if (!PREVIEW) showSoundHint(wrap);
     });
+    return v;
+  }
+
+  // ── Closing slide ────────────────────────────────────
+  function viewClosing() {
+    const v = view("closing-slide");
+    stopVideo();
+    document.body.classList.add("full");
+    const r = el("div", "endslide");
+    ((CLOSING_SLIDE && CLOSING_SLIDE.lines) || ["Thanks for playing!"]).forEach((t, k) => r.append(el("p", `end-line l${k}`, t)));
+    v.append(r);
     return v;
   }
 

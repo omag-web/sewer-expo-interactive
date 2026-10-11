@@ -245,7 +245,7 @@
   import {
     GAME, QUESTIONS, auth, db, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qShort, qLabel, scoredUpTo,
     teamById, stepsFor, nextStep, prevStep, describeStep, pointsFor, grade, rankPlayers, teamStandings,
-    teamValueLabel, remainingMs, timeLimitFor, fmt, explainError, videoSignalRef, fmtClock, CLOSING_VIDEO, scaleValue, scaleBucket, keepClockSynced, QSIG
+    teamValueLabel, remainingMs, timeLimitFor, fmt, explainError, videoSignalRef, fmtClock, CLOSING_VIDEO, CLOSING_SLIDE, scaleValue, scaleBucket, keepClockSynced, QSIG
   } from "./game.js";
 
   setLogo($("logo"));
@@ -814,13 +814,14 @@
   function render() {
     if (!game) return;
     const { phase, qIndex } = game;
-    const label = phase === "lobby" ? "Lobby" : phase === "final" ? "Final results" : phase === "outro" ? "Closing video" :
+    const label = phase === "lobby" ? "Lobby" : phase === "final" ? "Final results" : phase === "outro" ? "Closing video" : phase === "closing" ? "Closing slide" :
       phase === "leaderboard" ? QUESTIONS[qIndex].standingsTitle : phase === "standings" ? "Team standings" : `${qShort(qIndex)} · ${{ video: "Video", question: "Answering", reveal: "Reveal" }[phase]}`;
     $("phase").textContent = label;
     $("phaseMeta").textContent = phase === "standings" ? "Showing team standings · Next picks up where you left off" : phase === "lobby" ? "Players are joining" :
       phase === "video" ? "Video is playing on the screen — the first question opens by itself when it ends" :
       phase === "question" ? `Phones are live · ${QUESTIONS[qIndex].q}` : phase === "final" ? "Winner is on the screen" :
-      phase === "outro" ? `${CLOSING_VIDEO ? CLOSING_VIDEO.title : "Closing video"} is playing with sound — then a thank-you card` : `${QUESTIONS[qIndex].roundTitle} (shown as "${QUESTIONS[qIndex].publicTitle}") · Question ${QUESTIONS[qIndex].step + 1} of ${QUESTIONS[qIndex].steps}`;
+      phase === "outro" ? `${CLOSING_VIDEO ? CLOSING_VIDEO.title : "Closing video"} is playing with sound — Next shows the closing slide` :
+      phase === "closing" ? "Closing slide is on the screen · end of the session" : `${QUESTIONS[qIndex].roundTitle} (shown as "${QUESTIONS[qIndex].publicTitle}") · Question ${QUESTIONS[qIndex].step + 1} of ${QUESTIONS[qIndex].steps}`;
     $("kPlayers").textContent = players.length;
     $("kAnswers").textContent = ["question", "reveal"].includes(phase) ? `${answers.length}` : "–";
 
@@ -829,7 +830,7 @@
     $("next").disabled = busy || !n;
     $("back").disabled = busy || !stepBefore();
 
-    $("redoQ").hidden = ["lobby", "final", "leaderboard", "standings", "outro"].includes(phase);
+    $("redoQ").hidden = ["lobby", "final", "leaderboard", "standings", "outro", "closing"].includes(phase);
     renderTimer();
     renderPreview();
     renderQList();
@@ -860,7 +861,7 @@
 
   function renderPreview() {
     const box = $("qprev");
-    if (["lobby", "final", "outro", "standings"].includes(game.phase) || (game.phase === "leaderboard")) { box.hidden = true; return; }
+    if (["lobby", "final", "outro", "closing", "standings"].includes(game.phase) || (game.phase === "leaderboard")) { box.hidden = true; return; }
     box.hidden = false;
     const i = game.qIndex, Q = QUESTIONS[i];
     const counts = Q.scale
@@ -944,6 +945,7 @@
     const end = el("div", "rsec");
     end.append(row({ cls: "stand", num: "🎉", text: "Reveal the winner", cur: phase === "final", target: { phase: "final", qIndex: QUESTIONS.length - 1 } }));
     if (CLOSING_VIDEO) end.append(row({ cls: "vid", num: "🎬", text: `Closing video · ${CLOSING_VIDEO.title} (with sound)`, cur: phase === "outro", target: { phase: "outro", qIndex: QUESTIONS.length - 1 } }));
+    if (CLOSING_SLIDE) end.append(row({ cls: "stand", num: "🪧", text: "Closing slide · “You can inspect your sewer lines on your terms…”", cur: phase === "closing", target: { phase: "closing", qIndex: QUESTIONS.length - 1 } }));
     list.append(end);
   }
 

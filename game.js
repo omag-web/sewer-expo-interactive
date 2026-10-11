@@ -2,9 +2,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, connectAuthEmulator } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, connectFirestoreEmulator, doc, collection, setDoc, getDocFromServer, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, GAME, TEAMS, DECISIONS, ROUND_QUESTIONS, ROUNDS, CLOSING_VIDEO, PRACTICE } from "./config.js";
+import { firebaseConfig, GAME, TEAMS, DECISIONS, ROUND_QUESTIONS, ROUNDS, CLOSING_VIDEO, PRACTICE, CLOSING_SLIDE } from "./config.js";
 
-export { GAME, TEAMS, DECISIONS, ROUNDS, CLOSING_VIDEO };
+export { GAME, TEAMS, DECISIONS, ROUNDS, CLOSING_VIDEO, CLOSING_SLIDE };
 
 // ── Build the flat question list from ROUNDS × ROUND_QUESTIONS ──
 const PALETTE = ["#d49c61", "#5b9bd5", "#6cc08b", "#c77dcc", "#e0614f", "#4fc1c1", "#e8c14f", "#9aa5b1"];
@@ -157,8 +157,9 @@ const lastMainQ = QUESTIONS.reduce((m, Q, i) => (!Q.extra ? i : m), -1);
 const firstMainQ = QUESTIONS.findIndex((Q) => !Q.extra);
 export function nextStep(phase, qIndex) {
   if (phase === "lobby") return firstOf(firstMainQ);
-  if (phase === "final") return CLOSING_VIDEO ? { phase: "outro", qIndex } : null;
-  if (phase === "outro") return null;
+  if (phase === "final") return CLOSING_VIDEO ? { phase: "outro", qIndex } : CLOSING_SLIDE ? { phase: "closing", qIndex } : null;
+  if (phase === "outro") return CLOSING_SLIDE ? { phase: "closing", qIndex } : null;
+  if (phase === "closing") return null;
   const steps = stepsFor(qIndex);
   const at = steps.indexOf(phase);
   if (at >= 0 && at < steps.length - 1) return { phase: steps[at + 1], qIndex };
@@ -173,6 +174,7 @@ export function nextStep(phase, qIndex) {
 export function prevStep(phase, qIndex) {
   if (phase === "lobby") return null;
   if (phase === "outro") return { phase: "final", qIndex };
+  if (phase === "closing") return CLOSING_VIDEO ? { phase: "outro", qIndex } : { phase: "final", qIndex };
   if (phase === "final") return lastOf(lastMainQ);
   const steps = stepsFor(qIndex);
   const at = steps.indexOf(phase);
@@ -188,6 +190,7 @@ export function describeStep(s) {
   if (!s) return "Game over";
   if (s.phase === "final") return "Reveal the winner";
   if (s.phase === "outro") return CLOSING_VIDEO ? `Play closing video (${CLOSING_VIDEO.title})` : "Closing video";
+  if (s.phase === "closing") return "Show closing slide";
   if (s.phase === "lobby") return "Lobby";
   const Q = QUESTIONS[s.qIndex];
   const n = qShort(s.qIndex);
