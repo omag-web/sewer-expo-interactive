@@ -52,6 +52,12 @@ Everything editable is in `config.js`:
 - `GAME` — title, timers, scoring (100 points per correct answer; speed doesn't matter), `confidenceWager` (off by default; when on, confidence 4–5 boosts right answers and costs points on wrong ones)
 - `GAME.id` — change it to start a completely fresh game without deleting the old one
 
+## Safeguards
+
+- **Timers:** every device syncs to the Firebase server clock, so phones, screen and admin always show the same countdown.
+- **Closing a vote:** the admin page locks voting first, then counts — last-second answers are either counted or clearly rejected ("Too late"), never lost. Two admin tabs open at once can't score a question twice.
+- **Out-of-date pages:** the admin page stamps its version on the game; any phone or screen running older cached code refreshes itself once, then shows a red warning if it's still behind. GitHub Pages lets browsers cache files for up to 10 minutes, so after any change wait ~10 minutes, then hard refresh the admin and screen.
+
 ## Day-of checklist
 
 - Open `admin.html` on the presenter laptop and sign in → **Set up game** (first time only)

@@ -74,6 +74,29 @@ const PRACTICE_QS = ((PRACTICE && PRACTICE.questions) || []).map((p, k, all) => 
 }));
 export const QUESTIONS = [...PRACTICE_QS, ...VIDEO_QS.map((Q) => ({ ...Q, confIndex: Q.confIndex >= 0 ? Q.confIndex + PRACTICE_QS.length : -1 }))];
 // qLabel is for the audience (never the video's real name); qShort is admin-only
+// Fingerprint of the question list, answer keys and timers. The admin page
+// stamps it on the game; any phone or screen whose copy differs is running
+// old (cached) code and refreshes itself.
+export const QSIG = (() => {
+  const t = JSON.stringify(QUESTIONS.map((q) => [q.round, q.id, q.q, q.time, q.choices.map((c) => c.label), q.answer, !!q.multi, !!q.leaderboard, !!q.extra]));
+  let h = 5381; for (let k = 0; k < t.length; k++) h = ((h * 33) ^ t.charCodeAt(k)) >>> 0;
+  return h.toString(36);
+})();
+let staleShown = false, refreshing = false;
+export function checkVersion(game, onStillStale) {
+  if (!game || !game.sig || game.sig === QSIG || refreshing) return;
+  const key = `refreshedFor_${game.sig}`;
+  let tried = false; try { tried = !!sessionStorage.getItem(key); sessionStorage.setItem(key, "1"); } catch {}
+  if (!tried) {
+    refreshing = true;
+    // pull fresh copies of the page's files, then reload
+    const page = location.pathname.split("/").pop() || "index.html";
+    Promise.all([page, "game.js", "config.js", "theme.css"].map((u) => fetch(u, { cache: "reload" }).catch(() => {})))
+      .finally(() => location.reload());
+    return;
+  }
+  if (!staleShown) { staleShown = true; onStillStale && onStillStale(); }
+}
 export const qLabel = (i) => { const Q = QUESTIONS[i]; return `${Q.publicTitle} · Question ${Q.step + 1} of ${Q.steps}`; };
 export const qShort = (i) => { const Q = QUESTIONS[i]; return `${Q.roundTitle} · Q${Q.step + 1}`; };
 export const choiceMark = (c, k) => c.emoji || c.mark || LETTERS[k];
@@ -237,13 +260,13 @@ export const serverNow = () => Date.now() + offset;
 export function noteLiveOpen() {}  // no longer used (kept so older pages don't break)
 let syncing = null;
 const TAB_ID = Math.random().toString(36).slice(2, 10);
-export function syncClock(uid) {
+export function syncClock(uid, rounds = 3) {
   if (!uid || syncing) return syncing;
   // one record per open page, so the admin page and its preview don't collide
   const ref = doc(db, "games", GAME.id, "clock", `${uid}_${TAB_ID}`);
   syncing = (async () => {
     let best = null;
-    for (let k = 0; k < 4; k++) {
+    for (let k = 0; k < rounds; k++) {
       try {
         const t0 = Date.now();
         await setDoc(ref, { t: serverTimestamp() });
@@ -261,11 +284,16 @@ export function syncClock(uid) {
   })();
   return syncing;
 }
-// re-check every few minutes in case a device's clock drifts or it slept
+// Check once on load, then again only when a phone wakes after being away a
+// while (a clock doesn't drift meaningfully during a session). Keeps database
+// traffic low with hundreds of phones.
 export function keepClockSynced(uid) {
-  syncClock(uid);
-  setInterval(() => syncClock(uid), 4 * 60 * 1000);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) syncClock(uid); });
+  syncClock(uid, 3);
+  let hiddenAt = 0;
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) hiddenAt = Date.now();
+    else if (hiddenAt && Date.now() - hiddenAt > 30000) syncClock(uid, 1);
+  });
 }
 export function remainingMs(game) {
   if (!game || game.phase !== "question" || !game.openedAt) return 0;

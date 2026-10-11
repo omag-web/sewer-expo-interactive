@@ -14,6 +14,7 @@
   /* Built for a 16:9 display; everything scales with the viewport. */
   html, body { height: 100%; overflow: hidden; }
   body { font-size: 1.6vh; }
+  .stalebar { flex: none; background: var(--bad); color: #fff; font-weight: 700; font-size: 1.8vh; padding: .6vh 1vw; border-radius: .6vh; }
   .soundchip { flex: none; background: rgba(24,23,22,.8); border: 1px solid var(--edge); color: var(--muted); padding: .6vh 1vw; border-radius: 99px; font-size: 1.7vh; font-weight: 600; }
   body.preview .soundchip { display: none; }
   .endslide { gap: 4vh; padding: 0 8vw; }
@@ -237,7 +238,7 @@
   import { onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qLabel,
-    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut, fmtClock, videoSignalRef, auth, CLOSING_VIDEO, scaleValue, keepClockSynced
+    teamById, rankPlayers, teamStandings, teamValueLabel, remainingMs, noteLiveOpen, timeLimitFor, fmt, explainError, enableAdminShortcut, fmtClock, videoSignalRef, auth, CLOSING_VIDEO, scaleValue, keepClockSynced, checkVersion
   } from "./game.js";
   import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -295,6 +296,10 @@
   onSnapshot(gameRef, (s) => {
     const prev = game;
     game = s.exists() ? s.data({ serverTimestamps: "estimate" }) : null;
+    checkVersion(game, () => {
+      const b = el("div", "stalebar", "⚠ Screen and admin page are on different versions — hard refresh both (Ctrl + Shift + R)");
+      document.querySelector(".top").insertBefore(b, $("topRight"));
+    });
     if (game && game.phase === "question" && prev && (prev.phase !== "question" || prev.qIndex !== game.qIndex) && game.openedAt) noteLiveOpen(game.openedAt.toMillis());
     const q = game ? game.qIndex : null;
     if (q !== ansFor) {

@@ -240,12 +240,12 @@
   import { signInWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import {
     onSnapshot, setDoc, updateDoc, deleteDoc, getDocs, query, where, doc, writeBatch,
-    serverTimestamp, arrayUnion, arrayRemove, increment, collection
+    serverTimestamp, arrayUnion, arrayRemove, increment, collection, runTransaction
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, QUESTIONS, auth, db, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qShort, qLabel, scoredUpTo,
     teamById, stepsFor, nextStep, prevStep, describeStep, pointsFor, grade, rankPlayers, teamStandings,
-    teamValueLabel, remainingMs, timeLimitFor, fmt, explainError, videoSignalRef, fmtClock, CLOSING_VIDEO, scaleValue, scaleBucket, keepClockSynced
+    teamValueLabel, remainingMs, timeLimitFor, fmt, explainError, videoSignalRef, fmtClock, CLOSING_VIDEO, scaleValue, scaleBucket, keepClockSynced, QSIG
   } from "./game.js";
 
   setLogo($("logo"));
@@ -267,7 +267,7 @@
   let busy = false, tick = null, autoTimer = null;
 
   // ── Auth ─────────────────────────────────────────────
-  let clockFor = null;
+  let clockFor = null, lastStamp = 0;
   onAuthStateChanged(auth, (u) => {
     unsubs.forEach((f) => f()); unsubs = [];
     // No-password mode: sign in quietly in the background and go straight in
@@ -282,6 +282,8 @@
     setTimeout(fitPreview, 0);
     unsubs.push(onSnapshot(gameRef, (s) => {
       game = s.exists() ? s.data({ serverTimestamps: "estimate" }) : null;
+      // stamp this page's version on the game so out-of-date phones/screens refresh
+      if (game && game.sig !== QSIG && Date.now() - lastStamp > 10000) { lastStamp = Date.now(); updateDoc(gameRef, { sig: QSIG }).catch(() => {}); }
       $("setup").hidden = !!game; $("console").hidden = !game;
       watchAnswers(); watchVideo(); render();
     }, fail));
@@ -323,7 +325,7 @@
   }
 
   $("createGame").onclick = () => run(() => setDoc(gameRef, freshGame()));
-  const freshGame = () => ({ phase: "lobby", qIndex: 0, scored: [], teams: [], openedAt: null, timeLimit: GAME.defaultTimeLimit, updatedAt: serverTimestamp() });
+  const freshGame = () => ({ phase: "lobby", qIndex: 0, scored: [], teams: [], openedAt: null, timeLimit: GAME.defaultTimeLimit, sig: QSIG, updatedAt: serverTimestamp() });
 
   // Styled confirm dialog. Resolves true (confirm) or false (cancel / Esc / click outside).
   // requireText: the confirm button stays off until that exact word is typed.
@@ -453,6 +455,17 @@
     const Q = QUESTIONS[i];
     const opened = game.openedAt.toMillis();
     const limit = game.timeLimit || timeLimitFor(i);
+    // Step 1: close voting for everyone in one atomic step. Only one admin page
+    // can win this (so a second admin tab can't score twice), and once it lands
+    // the database rejects any further answers, so the count below is final.
+    const won = await runTransaction(db, async (tx) => {
+      const g = (await tx.get(gameRef)).data();
+      if (!g || g.phase !== "question" || g.qIndex !== i || (g.scored || []).includes(i)) return false;
+      tx.update(gameRef, { phase: "reveal", scored: arrayUnion(i), updatedAt: serverTimestamp() });
+      return true;
+    });
+    if (!won) return;
+    // Step 2: count every answer that made it in, then write points
     const snap = await getDocs(query(answersCol, where("q", "==", i)));
     const byUid = new Map(snap.docs.map((d) => [d.data().uid, { ref: d.ref, ...d.data() }]));
 
@@ -464,7 +477,7 @@
     const avg = Q.scale && vals.length ? vals.reduce((s, x) => s + x, 0) / vals.length : null;
 
     if (Q.unscored) {
-      return updateDoc(gameRef, { phase: "reveal", qIndex: i, scored: arrayUnion(i), dist, avg, updatedAt: serverTimestamp() });
+      return updateDoc(gameRef, { dist, avg, updatedAt: serverTimestamp() });
     }
 
     // each player's confidence for this video, if wagers are on
@@ -496,8 +509,8 @@
     next.forEach((p) => ops.push((b) => b.update(doc(playersCol, p.id), {
       score: p.score, correct: p.correct, answered: p.answered, streak: p.streak, rank: p.rank
     })));
-    // the game update goes last so phones already have their points when the reveal lands
-    ops.push((b) => b.update(gameRef, { phase: "reveal", qIndex: i, scored: arrayUnion(i), teams, dist, avg, updatedAt: serverTimestamp() }));
+    // team standings go last, after every player's points are in
+    ops.push((b) => b.update(gameRef, { teams, dist, avg, updatedAt: serverTimestamp() }));
     for (let k = 0; k < ops.length; k += 450) {
       const b = writeBatch(db);
       ops.slice(k, k + 450).forEach((op) => op(b));

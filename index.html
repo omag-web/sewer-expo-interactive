@@ -121,6 +121,7 @@
   .cmp-mark span { position: absolute; left: 50%; transform: translateX(-50%); font-size: 13px; font-weight: 700; white-space: nowrap; }
   .cmp-mark.you { background: #fff; z-index: 2; } .cmp-mark.you span { bottom: 26px; color: #fff; }
   .cmp-mark.room { background: var(--accent); } .cmp-mark.room span { top: 26px; color: var(--accent); }
+  .stalebar { background: var(--bad); color: #fff; font-weight: 700; font-size: 14px; padding: 8px 14px; text-align: center; }
   .tagline { color: var(--accent); font-family: var(--cond); font-weight: 700; font-size: 21px; line-height: 1.15; margin: -4px 0 0; }
   .choices.scale { grid-template-columns: repeat(5, 1fr); gap: 8px; }
   .choices.scale .choice { min-height: 76px; justify-content: center; padding: 0; border-left-width: 2px; border-top: 8px solid var(--c); }
@@ -178,7 +179,7 @@
   import { doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, auth, db, gameRef, answerId, $, el, setLogo, choiceMark, qLabel,
-    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError, enableAdminShortcut, fmtClock, scaleValue, keepClockSynced
+    teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError, enableAdminShortcut, fmtClock, scaleValue, keepClockSynced, checkVersion
   } from "./game.js";
   enableAdminShortcut();
 
@@ -217,6 +218,10 @@
     onSnapshot(gameRef, (s) => {
       const prev = game;
       game = s.exists() ? s.data({ serverTimestamps: "estimate" }) : null;
+      checkVersion(game, () => {
+        const b = el("div", "stalebar", "This page is out of date. Please refresh it — if this stays, the host needs to refresh the admin page.");
+        document.body.prepend(b);
+      });
       if (game && game.phase === "question" && prev && (prev.phase !== "question" || prev.qIndex !== game.qIndex) && game.openedAt) {
         noteLiveOpen(game.openedAt.toMillis());
       }
@@ -274,7 +279,7 @@
     const q = game ? game.qIndex : 0;
     const teamSig = ((game && game.teams) || []).map((t) => `${t.id}${t.rank}${t.value}`).join();
     const p = picksNow();
-    const key = `${phase}:${q}:${p ? p.join(",") : ""}:${myAnswer ? myAnswer.points ?? "" : ""}:${me.team}:${me.score}:${teamSig}`;
+    const key = `${phase}:${q}:${p ? p.join(",") : ""}:${myAnswer ? myAnswer.points ?? "" : ""}:${me.team}:${me.score}:${teamSig}:${game && game.avg != null ? game.avg.toFixed(2) : ""}`;
     if (key === lastKey) return;
 
     if (phase === "lobby") swap(viewLobby(), key);
