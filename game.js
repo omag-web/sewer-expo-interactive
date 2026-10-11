@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, connectAuthEmulator } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, connectFirestoreEmulator, doc, collection } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, GAME, TEAMS, DECISIONS, ROUND_QUESTIONS, ROUNDS, CLOSING_VIDEO } from "./config.js";
+import { firebaseConfig, GAME, TEAMS, DECISIONS, ROUND_QUESTIONS, ROUNDS, CLOSING_VIDEO, PRACTICE } from "./config.js";
 
 export { GAME, TEAMS, DECISIONS, ROUNDS, CLOSING_VIDEO };
 
@@ -25,7 +25,7 @@ const STANDINGS_ROUNDS = (() => {
 const HALFTIME = GAME.standingsAfter === "middle" || GAME.standingsAfter == null;
 // What the audience sees instead of the video's real name
 const publicTitle = (ri) => (ROUNDS[ri].extra ? "Bonus video" : `Video ${MAIN.indexOf(ri) + 1}`);
-export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) => {
+const VIDEO_QS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) => {
   const base = ri * ROUND_QUESTIONS.length;
   const choices = t.choices.map((c, j) => {
     const o = typeof c === "string" ? { label: c } : { ...c };
@@ -63,6 +63,16 @@ export const QUESTIONS = ROUNDS.flatMap((r, ri) => ROUND_QUESTIONS.map((t, k) =>
     confIndex: confAt >= 0 && confAt < k ? base + confAt : -1
   };
 }));
+
+// Practice questions: before the first video, no video, never scored.
+const PRACTICE_QS = ((PRACTICE && PRACTICE.questions) || []).map((p, k, all) => ({
+  id: `practice${k + 1}`, q: p.q, multi: false, time: p.time || PRACTICE.time,
+  choices: p.choices.map((c, j) => ({ label: c, color: PALETTE[j % PALETTE.length] })),
+  answer: [], noKey: true, unscored: true, practice: true, hasMeanings: false, explain: "",
+  round: "practice", roundTitle: PRACTICE.title || "Practice", publicTitle: PRACTICE.title || "Practice",
+  step: k, steps: all.length, video: null, leaderboard: false, standingsTitle: "", extra: false, confIndex: -1
+}));
+export const QUESTIONS = [...PRACTICE_QS, ...VIDEO_QS.map((Q) => ({ ...Q, confIndex: Q.confIndex >= 0 ? Q.confIndex + PRACTICE_QS.length : -1 }))];
 // qLabel is for the audience (never the video's real name); qShort is admin-only
 export const qLabel = (i) => { const Q = QUESTIONS[i]; return `${Q.publicTitle} · Question ${Q.step + 1} of ${Q.steps}`; };
 export const qShort = (i) => { const Q = QUESTIONS[i]; return `${Q.roundTitle} · Q${Q.step + 1}`; };

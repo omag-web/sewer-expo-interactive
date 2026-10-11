@@ -16,7 +16,10 @@
   body { font-size: 1.6vh; }
   .soundchip { flex: none; background: rgba(24,23,22,.8); border: 1px solid var(--edge); color: var(--muted); padding: .6vh 1vw; border-radius: 99px; font-size: 1.7vh; font-weight: 600; }
   body.preview .soundchip { display: none; }
-  .vready .end-logo { max-height: 12vh; max-width: 30vw; object-fit: contain; margin-bottom: 2vh; }
+  .endslide { gap: 4vh; padding: 0 8vw; }
+  .endslide .end-line { margin: 0; font-family: var(--cond); font-weight: 700; line-height: 1.12; text-wrap: balance; opacity: 0; animation: rise .9s ease forwards; }
+  .endslide .l0 { font-size: 7.6vh; color: #fff; }
+  .endslide .l1 { font-size: 6.2vh; color: var(--accent); animation-delay: 1.6s; }
   .soundhint { position: absolute; left: 50%; bottom: 4vh; transform: translateX(-50%); background: rgba(0,0,0,.7); color: #fff; padding: 1vh 1.6vw; border-radius: 99px; font-size: 2.4vh; font-weight: 600; z-index: 2; }
   /* small full-screen toggle, bottom-right corner */
   #fsBtn {
@@ -431,11 +434,12 @@
     const v = view();
     stopVideo();
     const wrap = el("div", "vwrap"); document.body.append(wrap);
+    // Final slide: just the closing lines, one per line
     const endCard = () => {
       if (wrap.querySelector(".vready")) return;
-      const r = el("div", "vready");
-      const logo = el("img"); logo.className = "end-logo"; setLogo(logo);
-      r.append(logo, el("h1", null, (CLOSING_VIDEO && CLOSING_VIDEO.endText) || "Thanks for playing!"), el("p", null, `${GAME.title} · ${GAME.eventLine1}`));
+      const r = el("div", "vready endslide");
+      const lines = [].concat((CLOSING_VIDEO && CLOSING_VIDEO.endText) || "Thanks for playing!");
+      lines.forEach((t, k) => r.append(el("p", `end-line l${k}`, t)));
       wrap.append(r);
     };
     if (!CLOSING_VIDEO) { endCard(); return v; }
@@ -556,7 +560,7 @@
     const v = view("results");
     const top = el("div", "qtop");
     top.append(el("p", "qtext", Q.q));
-    const sub = el("p", "eyebrow", `How the room voted${Q.multi ? " · % of players who picked each" : ""}${Q.noKey ? " · not scored" : ""}`);
+    const sub = el("p", "eyebrow", `How the room voted${Q.multi ? " · % of players who picked each" : ""}${Q.practice ? " · practice, not scored" : Q.noKey ? " · not scored" : ""}`);
     const chart = el("div", "vchart");
     const cols = Q.choices.map((c, k) => {
       const col = el("div", `vcol ${Q.noKey ? "" : Q.answer.includes(k) ? "right" : "wrong"}`);

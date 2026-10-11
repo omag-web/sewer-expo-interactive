@@ -110,6 +110,7 @@ export const ROUND_QUESTIONS = [
     id: "confidence",
     q: "How confident is your team?",
     scale: true,            // phones get a 1–5 slider
+    time: 45,               // seconds
     low: "Not confident",
     high: "Extremely confident",
     choices: ["1", "2", "3", "4", "5"]
@@ -118,7 +119,8 @@ export const ROUND_QUESTIONS = [
     id: "seen",
     q: "What did you see?",
     multi: true,
-    choices: ["Roots", "Offset(s)", "Crack", "Protruding taps", "Grease", "Flow"]
+    time: 60,               // seconds
+    choices: ["Roots", "Offset(s)", "Crack", "Protruding taps", "Grease", "Belly/Sag"]
   },
   {
     id: "serious",
@@ -131,6 +133,25 @@ export const ROUND_QUESTIONS = [
     choices: ["Clean", "Root removal", "Point repair", "Replace line", "Investigate further", "No action"]
   }
 ];
+
+// ─────────────────────────────────────────────────────────────
+// PRACTICE — warm-up questions before the first video, so the room gets
+// used to answering on their phones. Never scored. No video.
+// ─────────────────────────────────────────────────────────────
+export const PRACTICE = {
+  title: "Practice",
+  time: 45,                 // seconds per practice question
+  questions: [
+    {
+      q: "How many people at your table have watched an actual sewer CCTV inspection?",
+      choices: ["Nobody", "1–2 people", "3–5 people", "6 or more people"]
+    },
+    {
+      q: "How many years of sewer experience does your table have combined?",
+      choices: ["Less than 25 years", "25–50 years", "51–100 years", "Over 100 years — we've seen some things!"]
+    }
+  ]
+};
 
 // ─────────────────────────────────────────────────────────────
 // ROUNDS — one per video, in the order they're played. The video plays on
@@ -159,12 +180,12 @@ export const ROUNDS = [
   {
     title: "Bartlesville 2A",
     video: { src: "video/Bartlesville 2A - Edit - Final.mp4" },
-    answers: { seen: ["Offset(s)", "Flow"], serious: ["Fix it"] }
+    answers: { seen: ["Offset(s)", "Belly/Sag"], serious: ["Fix it"] }
   },
   {
     title: "Mellenson",
     video: { src: "video/Mellenson - Edit - Final.mp4" },
-    answers: { seen: ["Roots", "Crack", "Grease"], serious: ["Act now"] }
+    answers: { seen: ["Grease", "Roots", "Crack", "Offset(s)"], serious: ["Act now"] }
   },
   {
     title: "Barnsdall",
@@ -185,5 +206,9 @@ export const ROUNDS = [
 export const CLOSING_VIDEO = {
   title: "Smittle",
   src: "video/Smittle - Edit - Final.mp4",
-  endText: "Thanks for playing!"
+  // Final slide after the video ends: each entry is its own line
+  endText: [
+    "You can inspect your sewer lines on your terms.",
+    "Or you may end up watching the consequences on someone else's."
+  ]
 };

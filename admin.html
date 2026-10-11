@@ -911,13 +911,13 @@
       const done = qs.filter((x) => isScored(x.i)).length;
       const h = el("div", "rsec-h");
       h.append(document.createTextNode(qs[0].Q.roundTitle + (qs[0].Q.extra ? " · spare" : "")),
-        el("small", null, done ? `${done} of ${qs.length} done` : qs[0].Q.extra ? "only if there's time · click Play to use it" : `${qs.length} questions`));
+        el("small", null, qs[0].Q.practice ? "warm-up · not scored" : done ? `${done} of ${qs.length} done` : qs[0].Q.extra ? "only if there's time · click Play to use it" : `${qs.length} questions`));
       if (qs[0].Q.extra) sec.classList.add("extra");
       sec.append(h);
       qs.forEach(({ Q, i }) => {
         if (Q.video) sec.append(row({ cls: "vid", num: "▶", text: `Play ${Q.roundTitle}`, cur: phase === "video" && qIndex === i, target: { phase: "video", qIndex: i } }));
         sec.append(row({
-          num: `Q${Q.step + 1}`, text: Q.q, status: isScored(i) ? "✓ done" : Q.noKey ? "poll" : "",
+          num: `Q${Q.step + 1}`, text: Q.q, status: isScored(i) ? "✓ done" : Q.practice ? "" : Q.noKey ? "poll" : "",
           cur: qIndex === i && (phase === "question" || phase === "reveal"),
           target: isScored(i) ? { phase: "reveal", qIndex: i } : { phase: "question", qIndex: i }
         }));

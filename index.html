@@ -188,7 +188,7 @@
   let uid = null, game = null, me = null, myAnswer = null, ansUnsub = null, ansFor = null;
   let pending = null;       // picks being written
   let draft = new Set();    // multi-select picks before locking in
-  let tick = null, lastKey = null, joining = false, openedFor = null;
+  let tick = null, nextTick = null, lastKey = null, joining = false, openedFor = null;
 
   const main = $("main");
   const playerRef = () => doc(db, "games", GAME.id, "players", uid);
@@ -284,9 +284,11 @@
     else if (phase === "final" || phase === "outro") swap(viewStanding(true), key);
   }
 
+  // The new view is built (and may start its own timer as nextTick) before
+  // swap runs, so swap stops the OLD timer and hands over to the new one.
   function swap(node, key) {
     lastKey = key;
-    clearInterval(tick); tick = null;
+    clearInterval(tick); tick = nextTick; nextTick = null;
     main.replaceChildren(node);
   }
 
@@ -424,7 +426,7 @@
       }
     };
     update();
-    tick = setInterval(update, 200);
+    nextTick = setInterval(update, 200);
     return v;
   }
 
@@ -484,7 +486,7 @@
       }
     };
     update();
-    tick = setInterval(update, 200);
+    nextTick = setInterval(update, 200);
     return v;
   }
 
@@ -549,7 +551,8 @@
     const Q = QUESTIONS[i];
     const v = el("div", "view center");
     const picks = myAnswer ? myAnswer.picks : null;
-    v.append(el("div", "big-icon", "🗳️"), el("div", "result part", "Thanks!"), el("p", "sub", "This one isn't scored — check the big screen to see how the room voted."));
+    v.append(el("div", "big-icon", Q.practice ? "👍" : "🗳️"), el("div", "result part", Q.practice ? "Got it!" : "Thanks!"),
+      el("p", "sub", Q.practice ? "Practice question — not scored. That's how answering works. Check the big screen to see how the room voted." : "This one isn't scored — check the big screen to see how the room voted."));
     if (picks) {
       const list = el("div", "anslist");
       list.append(el("h4", null, picks.length > 1 ? "Your picks" : "Your pick"));

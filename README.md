@@ -14,13 +14,15 @@ Static site (GitHub Pages) + the Expo Wall's existing Firebase project (`sewer-e
 
 ## Each video round
 
+The game opens with **two practice questions** (no video, never scored) so the room learns how answering works (`PRACTICE` in `config.js`).
+
 1. Video plays on the screen
 2. **How confident is your team?** free slider on phones (Not confident → Extremely confident), not scored → bell curve with the room average at the reveal
 3. **What did you see?** pick all that apply
 4. **How serious is it?** Watch it / Maintain it / Fix it / Act now
 5. **What would you do?** single pick
 
-**Videos:** Bartlesville 2, Bartlesville 2A, Mellenson and Barnsdall are the scored rounds (halftime standings after Bartlesville 2A, final standings after Barnsdall). **Yale** is a spare: Next skips it, but you can click *Play Yale* in the admin run of show if there's time; its points count and Next then goes to the final standings. **Smittle** is the closing video (`CLOSING_VIDEO` in `config.js`): it plays with sound after the winner is revealed, then a thank-you card.
+**Videos:** Bartlesville 2, Bartlesville 2A, Mellenson and Barnsdall are the scored rounds (halftime standings after Bartlesville 2A, final standings after Barnsdall). **Yale** is a spare: Next skips it, but you can click *Play Yale* in the admin run of show if there's time; its points count and Next then goes to the final standings. **Smittle** is the closing video (`CLOSING_VIDEO` in `config.js`): it plays with sound after the winner is revealed, then a final slide: "You can inspect your sewer lines on your terms. / Or you may end up watching the consequences on someone else's." (`endText`).
 
 **Sound:** browsers only play video sound after someone has clicked or pressed a key on the screen page. At setup, click once on the screen (the full-screen button works). A small reminder shows in the corner until you do.
 
@@ -28,7 +30,7 @@ Static site (GitHub Pages) + the Expo Wall's existing Firebase project (`sewer-e
 
 Full-screen team standings show once at halftime (`standingsAfter` in `config.js`), and the finale shows the winners.
 
-Every question gets **2 minutes** for table discussion (`defaultTimeLimit` in `config.js`). When a video ends, a "Get ready" card shows for 5 seconds, then the first question opens.
+Timers: confidence **45 seconds**, "What did you see?" **60 seconds**, practice questions **45 seconds**, everything else **2 minutes** (`time` on each question, `defaultTimeLimit` for the rest). When a video ends, a "Get ready" card shows for 5 seconds, then the first question opens.
 The admin page reveals automatically when time runs out or everyone has answered.
 
 ## Setup (one time)
