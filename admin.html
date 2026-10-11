@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css?v=20261011165828">
 <style>
   header { padding: 14px 20px; border-bottom: 4px solid var(--accent); display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
   header .logo { max-height: 40px; max-width: 150px; object-fit: contain; }
@@ -17,6 +17,7 @@
   header .tools { display: flex; gap: 8px; flex-wrap: wrap; }
   header .tools .btn { min-height: 40px; font-size: 17px; padding: 6px 14px; }
   main { padding: 20px; max-width: 1280px; margin: 0 auto; }
+  .updatebar { position: fixed; z-index: 999; left: 50%; top: 10px; transform: translateX(-50%); display: flex; gap: 12px; align-items: center; background: #b8452f; color: #fff; font-weight: 700; padding: 10px 14px; border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,.4); max-width: 92vw; }
   .signin { max-width: 380px; margin: 60px auto; display: grid; gap: 12px; }
   .signin h2 { font-family: var(--cond); font-size: 36px; margin: 0; }
   .err { color: var(--bad); font-weight: 600; min-height: 1.2em; margin: 0; }
@@ -245,8 +246,8 @@
   import {
     GAME, QUESTIONS, auth, db, gameRef, playersCol, answersCol, $, el, setLogo, choiceMark, qShort, qLabel, scoredUpTo,
     teamById, stepsFor, nextStep, prevStep, describeStep, pointsFor, grade, rankPlayers, teamStandings,
-    teamValueLabel, remainingMs, timeLimitFor, fmt, explainError, videoSignalRef, fmtClock, CLOSING_VIDEO, CLOSING_SLIDE, scaleValue, scaleBucket, keepClockSynced, QSIG
-  } from "./game.js";
+    teamValueLabel, remainingMs, timeLimitFor, fmt, explainError, videoSignalRef, fmtClock, CLOSING_VIDEO, CLOSING_SLIDE, scaleValue, scaleBucket, keepClockSynced, BUILD, adminVersion, publishedBuild
+  } from "./game.js?v=20261011165828";
 
   setLogo($("logo"));
   $("title").textContent = `${GAME.title} · Admin Console`;
@@ -267,7 +268,27 @@
   let busy = false, tick = null, autoTimer = null;
 
   // ── Auth ─────────────────────────────────────────────
-  let clockFor = null, lastStamp = 0;
+  let clockFor = null;
+  // admin-only notice bar (never shown to the audience)
+  const barMsgs = { stale: null, published: null };
+  function setUpdateBar() {
+    const msg = barMsgs.stale || barMsgs.published;
+    let b = $("updateBar");
+    if (!msg) { if (b) b.remove(); return; }
+    if (!b) {
+      b = el("div", "updatebar"); b.id = "updateBar";
+      const t = el("span"); const go = el("button", "btn", "Reload now");
+      go.onclick = () => { const u = new URL(location.href); u.searchParams.set("v", Date.now()); location.replace(u.toString()); };
+      b.append(t, go); document.body.prepend(b);
+    }
+    b.firstChild.textContent = msg;
+  }
+  // every minute, check whether a newer version has been published
+  async function checkPublished() {
+    const live = await publishedBuild();
+    if (live && live > BUILD) { barMsgs.published = "A newer version of the game was published. Reload this page to use it — the game keeps its place."; setUpdateBar(); }
+  }
+  checkPublished(); setInterval(checkPublished, 60000);
   onAuthStateChanged(auth, (u) => {
     unsubs.forEach((f) => f()); unsubs = [];
     // No-password mode: sign in quietly in the background and go straight in
@@ -278,12 +299,12 @@
     $("tools").hidden = !isHost;
     $("adminBadge").hidden = !isHost;
     if (!isHost) { $("console").hidden = true; $("setup").hidden = true; return; }
-    if (!$("pvFrame").src) $("pvFrame").src = `screen.html?preview=1&v=${QSIG}` + (emu ? "&emulator=1" : "");
+    if (!$("pvFrame").src) $("pvFrame").src = `screen.html?preview=1&v=${BUILD}` + (emu ? "&emulator=1" : "");
     setTimeout(fitPreview, 0);
     unsubs.push(onSnapshot(gameRef, (s) => {
       game = s.exists() ? s.data({ serverTimestamps: "estimate" }) : null;
       // stamp this page's version on the game so out-of-date phones/screens refresh
-      if (game && game.sig !== QSIG && Date.now() - lastStamp > 10000) { lastStamp = Date.now(); updateDoc(gameRef, { sig: QSIG }).catch(() => {}); }
+      adminVersion(game, gameRef, (on) => { barMsgs.stale = on ? "Another admin page is on a newer version. Press Ctrl + Shift + R to update this one." : null; setUpdateBar(); });
       $("setup").hidden = !!game; $("console").hidden = !game;
       watchAnswers(); watchVideo(); render();
     }, fail));
@@ -325,7 +346,7 @@
   }
 
   $("createGame").onclick = () => run(() => setDoc(gameRef, freshGame()));
-  const freshGame = () => ({ phase: "lobby", qIndex: 0, scored: [], teams: [], openedAt: null, timeLimit: GAME.defaultTimeLimit, sig: QSIG, updatedAt: serverTimestamp() });
+  const freshGame = () => ({ phase: "lobby", qIndex: 0, scored: [], teams: [], openedAt: null, timeLimit: GAME.defaultTimeLimit, build: BUILD, updatedAt: serverTimestamp() });
 
   // Styled confirm dialog. Resolves true (confirm) or false (cancel / Esc / click outside).
   // requireText: the confirm button stays off until that exact word is typed.

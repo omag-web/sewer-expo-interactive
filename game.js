@@ -1,8 +1,8 @@
 // Shared game logic for all three pages. Edit config.js, not this file.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, connectAuthEmulator } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, connectFirestoreEmulator, doc, collection, setDoc, getDocFromServer, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, GAME, TEAMS, DECISIONS, ROUND_QUESTIONS, ROUNDS, CLOSING_VIDEO, PRACTICE, CLOSING_SLIDE } from "./config.js";
+import { getFirestore, connectFirestoreEmulator, doc, collection, setDoc, getDocFromServer, serverTimestamp, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig, GAME, TEAMS, DECISIONS, ROUND_QUESTIONS, ROUNDS, CLOSING_VIDEO, PRACTICE, CLOSING_SLIDE } from "./config.js?v=20261011165828";
 
 export { GAME, TEAMS, DECISIONS, ROUNDS, CLOSING_VIDEO, CLOSING_SLIDE };
 
@@ -79,26 +79,62 @@ export const QUESTIONS = [...PRACTICE_QS, ...VIDEO_QS.map((Q) => ({ ...Q, confIn
 // old (cached) code and refreshes itself.
 // BUILD changes with every update (set automatically when changes are saved),
 // so any code change — not just question changes — makes old pages refresh.
-export const BUILD = "20261011015925";
+export const BUILD = "20261011165828";
 export const QSIG = (() => {
   const t = BUILD + JSON.stringify(QUESTIONS.map((q) => [q.round, q.id, q.q, q.time, q.choices.map((c) => c.label), q.answer, !!q.multi, !!q.leaderboard, !!q.extra]));
   let h = 5381; for (let k = 0; k < t.length; k++) h = ((h * 33) ^ t.charCodeAt(k)) >>> 0;
   return h.toString(36);
 })();
-let staleShown = false, refreshing = false;
-export function checkVersion(game, onStillStale) {
-  if (!game || !game.sig || game.sig === QSIG || refreshing) return;
-  const key = `refreshedFor_${game.sig}`;
-  let tried = false; try { tried = !!sessionStorage.getItem(key); sessionStorage.setItem(key, "1"); } catch {}
-  if (!tried) {
-    refreshing = true;
-    // pull fresh copies of the page's files, then reload
-    const page = location.pathname.split("/").pop() || "index.html";
-    Promise.all([page, "game.js", "config.js", "theme.css"].map((u) => fetch(u, { cache: "reload" }).catch(() => {})))
-      .finally(() => location.reload());
-    return;
+// Version check. The admin page stamps its BUILD on the game doc. A phone or
+// screen only acts when the admin's build is NEWER than its own (it's the one
+// that's out of date); newer phones never get flagged by an older admin.
+// Reloads use a fresh URL so iPhones can't serve the page from cache, and the
+// page's imports carry ?v=BUILD so it can't mix old and new files.
+const newerThan = (a, b) => String(a || "") > String(b || "");
+function reloadFresh(target) {
+  const key = `reloadTries_${target}`;
+  let tries = [];
+  try { tries = JSON.parse(sessionStorage.getItem(key) || "[]"); } catch {}
+  if (tries.length >= 3 || (tries.length && Date.now() - tries[tries.length - 1] < 20000)) return false;
+  tries.push(Date.now());
+  try { sessionStorage.setItem(key, JSON.stringify(tries)); } catch {}
+  const u = new URL(location.href);
+  u.searchParams.set("v", target);
+  const page = location.pathname.split("/").pop() || "index.html";
+  Promise.all([page, u.pathname + u.search].map((x) => fetch(x, { cache: "reload" }).catch(() => {})))
+    .finally(() => location.replace(u.toString()));
+  return true;
+}
+let reloading = false;
+export function checkVersion(game, setStale) {
+  const want = game && game.build;
+  if (!want || !newerThan(want, BUILD)) { setStale(false); return; }
+  if (reloading) return;
+  if (reloadFresh(want)) { reloading = true; return; }
+  setStale(true);
+}
+// Admin side: stamp our build if we're the newest; if another admin page is
+// newer, update ourselves instead of fighting over the stamp.
+let lastStamp = 0;
+export function adminVersion(game, ref, setStale) {
+  if (!game) return;
+  if (newerThan(game.build, BUILD)) {
+    if (!reloading && reloadFresh(game.build)) { reloading = true; return; }
+    setStale(true); return;
   }
-  if (!staleShown) { staleShown = true; onStillStale && onStillStale(); }
+  setStale(false);
+  if (game.build !== BUILD && Date.now() - lastStamp > 10000) {
+    lastStamp = Date.now();
+    updateDoc(ref, { build: BUILD, sig: deleteField() }).catch(() => {});
+  }
+}
+// Ask GitHub Pages what's actually published right now.
+export async function publishedBuild() {
+  try {
+    const t = await (await fetch(`game.js?check=${Date.now()}`, { cache: "no-store" })).text();
+    const m = t.match(/export const BUILD = "(\d+)"/);
+    return m ? m[1] : null;
+  } catch { return null; }
 }
 export const qLabel = (i) => { const Q = QUESTIONS[i]; return `${Q.publicTitle} · Question ${Q.step + 1} of ${Q.steps}`; };
 export const qShort = (i) => { const Q = QUESTIONS[i]; return `${Q.roundTitle} · Q${Q.step + 1}`; };

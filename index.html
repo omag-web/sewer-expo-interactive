@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css?v=20261011165828">
 <style>
   body { display: flex; flex-direction: column; }
   header {
@@ -180,7 +180,7 @@
   import {
     GAME, TEAMS, DECISIONS, QUESTIONS, auth, db, gameRef, answerId, $, el, setLogo, choiceMark, qLabel,
     teamById, remainingMs, noteLiveOpen, timeLimitFor, fmt, ordinal, teamValueLabel, grade, scoredUpTo, explainError, enableAdminShortcut, fmtClock, scaleValue, keepClockSynced, checkVersion
-  } from "./game.js";
+  } from "./game.js?v=20261011165828";
   enableAdminShortcut();
 
   document.title = GAME.title;
@@ -218,9 +218,10 @@
     onSnapshot(gameRef, (s) => {
       const prev = game;
       game = s.exists() ? s.data({ serverTimestamps: "estimate" }) : null;
-      checkVersion(game, () => {
-        const b = el("div", "stalebar", "This page is out of date. Please refresh it — if this stays, the host needs to refresh the admin page.");
-        document.body.prepend(b);
+      checkVersion(game, (on) => {
+        let b = $("stalebar");
+        if (on && !b) { b = el("div", "stalebar", "A new version is ready — pull down to refresh this page."); b.id = "stalebar"; document.body.prepend(b); }
+        if (!on && b) b.remove();
       });
       if (game && game.phase === "question" && prev && (prev.phase !== "question" || prev.qIndex !== game.qIndex) && game.openedAt) {
         noteLiveOpen(game.openedAt.toMillis());
